@@ -1,11 +1,13 @@
+// File: `movies-service/src/main/java/movies/moviesservice/entity/language/Language.java`
 package movies.moviesservice.entity.language;
 
 import jakarta.persistence.*;
 import lombok.*;
 import movies.moviesservice.entity.Movie;
-
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "languages")
@@ -18,14 +20,34 @@ public class Language {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(nullable = false, length = 6)
+    @Column(nullable = false, length = 16, unique = true)
     private String code;
 
     @ManyToMany(mappedBy = "languages")
     @Builder.Default
     private Set<Movie> movies = new HashSet<>();
-}
 
+    @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    private Instant updatedAt;
+
+    @PrePersist
+    public void onPrePersist() {
+        if (this.code == null) {
+            this.code = "lang-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+        }
+        Instant now = Instant.now();
+        if (this.createdAt == null) this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    public void onPreUpdate() {
+        this.updatedAt = Instant.now();
+    }
+}

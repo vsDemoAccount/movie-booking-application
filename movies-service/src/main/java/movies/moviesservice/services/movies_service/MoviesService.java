@@ -1,7 +1,8 @@
+// java
 package movies.moviesservice.services.movies_service;
 
 import jakarta.persistence.EntityNotFoundException;
-import movies.moviesservice.dtos.MovieDTO;
+import movies.moviesservice.dtos.*;
 import movies.moviesservice.Mappers.MovieMapper.MovieMapper;
 import movies.moviesservice.entity.Movie;
 import movies.moviesservice.repository.movies_repo.MoviesRepository;
@@ -9,10 +10,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import movies.moviesservice.entity.languages;
+import movies.moviesservice.entity.language.Language;
+import movies.moviesservice.entity.genre.Genre;
+import movies.moviesservice.entity.Franchise.Franchise;
+import movies.moviesservice.entity.movieCast.MovieCast;
+import movies.moviesservice.entity.person.Person;
+//import movies.moviesservice.entity.MovieMedia.MovieMedia;
+//import movies.moviesservice.entity.ExternalRating.ExternalRating;
 import org.springframework.transaction.annotation.Transactional;
 
-
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,9 +43,102 @@ public class MoviesService {
             throw new IllegalArgumentException("Movie with the same title already exists");
         }
 
+        // mapper creates base entity but relations were ignored on purpose in mapper
         Movie movie = movieMapper.toEntity(dto);
-        // Ensure code is not set from dto
+
+        // ensure code is not set from dto
         movie.setCode(null);
+
+        // populate relations manually from DTO
+        if (dto.getLanguages() != null) {
+            Set<Language> languageEntities = dto.getLanguages().stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(name -> {
+                        Language lang = new Language();
+                        lang.setName(name);
+                        return lang;
+                    })
+                    .collect(Collectors.toSet());
+            movie.setLanguages(languageEntities);
+        } else {
+            movie.setLanguages(new HashSet<>());
+        }
+
+        if (dto.getGenres() != null) {
+            Set<Genre> genreEntities = dto.getGenres().stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(name -> {
+                        Genre g = new Genre();
+                        g.setName(name);
+                        return g;
+                    })
+                    .collect(Collectors.toSet());
+            movie.setGenres(genreEntities);
+        } else {
+            movie.setGenres(new HashSet<>());
+        }
+
+        if (dto.getFranchise() != null && !dto.getFranchise().isBlank()) {
+            Franchise f = new Franchise();
+            f.setName(dto.getFranchise().trim());
+            movie.setFranchise(f);
+        } else {
+            movie.setFranchise(null);
+        }
+
+//        if (dto.getCast() != null) {
+//            Set<MovieCast> castEntities = dto.getCast().stream()
+//                    .map(cdto -> {
+//                        MovieCast mc = new MovieCast();
+//                        Person p = new Person();
+//                        if (cdto.getPersonId() != null) p.setId(cdto.getPersonId());
+//                        if (cdto.getPersonName() != null) p.setName(cdto.getPersonName());
+//                        mc.setPerson(p);
+//                        // Convert CastRole enum to String for storage
+//                        mc.setRole(cdto.getRole() != null ? cdto.getRole().name() : null);
+//                        mc.setCharacterName(cdto.getCharacterName());
+//                        mc.setMovie(movie);
+//                        return mc;
+//                    })
+//                    .collect(Collectors.toSet());
+//            movie.setCast(castEntities);
+//        } else {
+//            movie.setCast(new HashSet<>());
+//        }
+
+//        if (dto.getMedia() != null) {
+//            Set<MovieMedia> mediaEntities = dto.getMedia().stream()
+//                    .map(md -> {
+//                        MovieMedia mm = new MovieMedia();
+//                        mm.setType(md.getType());
+//                        mm.setUrl(md.getUrl());
+//                        mm.setMovie(movie);
+//                        return mm;
+//                    })
+//                    .collect(Collectors.toSet());
+//            movie.setMedia(mediaEntities);
+//        } else {
+//            movie.setMedia(new HashSet<>());
+//        }
+//
+//        if (dto.getExternalRatings() != null) {
+//            Set<ExternalRating> ratingEntities = dto.getExternalRatings().stream()
+//                    .map(rd -> {
+//                        ExternalRating er = new ExternalRating();
+//                        er.setSource(rd.getSource());
+//                        er.setRating(rd.getRating());
+//                        er.setMovie(movie);
+//                        return er;
+//                    })
+//                    .collect(Collectors.toSet());
+//            movie.setExternalRatings(ratingEntities);
+//        } else {
+//            movie.setExternalRatings(new HashSet<>());
+//        }
+
+        // regionRights: if Movie entity no longer has regionRights field, it will remain null
 
         Movie savedMovie = moviesRepository.save(movie);
         return movieMapper.toDTO(savedMovie);
@@ -67,11 +167,16 @@ public class MoviesService {
         }
         if (dto.getReleaseDate() != null) movie.setReleaseDate(dto.getReleaseDate());
         if (dto.getLanguages() != null) {
-            Set<languages> languageEnums = dto.getLanguages().stream()
-                    .map(String::toUpperCase)
-                    .map(languages::valueOf)
+            Set<Language> languageEntities = dto.getLanguages().stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(name -> {
+                        Language lang = new Language();
+                        lang.setName(name);
+                        return lang;
+                    })
                     .collect(Collectors.toSet());
-            movie.setLanguages(languageEnums);
+            movie.setLanguages(languageEntities);
         }
         if (dto.getCertification() != null) movie.setCertification(dto.getCertification());
         if (dto.getStatus() != null) movie.setStatus(dto.getStatus());

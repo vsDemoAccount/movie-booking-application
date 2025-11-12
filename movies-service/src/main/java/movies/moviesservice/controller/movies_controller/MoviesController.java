@@ -6,12 +6,14 @@ import lombok.RequiredArgsConstructor;
 import movies.moviesservice.dtos.MovieDTO;
 import movies.moviesservice.services.movies_service.MoviesService;
 import movies.moviesservice.utils.ApiResponse;
+import movies.moviesservice.validations.onCreate.Create;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,7 +28,7 @@ public class MoviesController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<MovieDTO>> createMovie(@Valid @RequestBody MovieDTO movieDto) {
+    public ResponseEntity<ApiResponse<MovieDTO>> createMovie(@Validated(Create.class) @RequestBody MovieDTO movieDto) {
         try {
             MovieDTO savedMovie = moviesService.createMovie(movieDto);
             ApiResponse<MovieDTO> response = ApiResponse.ok("Movie created successfully", savedMovie);
@@ -50,7 +52,7 @@ public class MoviesController {
     }
     // PATCH endpoint for updating a movie
     @PatchMapping("/{code}")
-    public ResponseEntity<ApiResponse<MovieDTO>> updateMovie(@Valid
+    public ResponseEntity<ApiResponse<MovieDTO>> updateMovie(@Validated(Create.class)
             @PathVariable String code,
             @RequestBody MovieDTO movieDto) {
         try {

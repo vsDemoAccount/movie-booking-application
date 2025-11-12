@@ -5,6 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+//import movies.moviesservice.dtos.ExternalRatingDTO.ExternalRatingDTO;
+import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
+//import movies.moviesservice.dtos.MovieMediaDTO.MovieMediaDTO;
+//import movies.moviesservice.dtos.RegionRightsDTO.RegionRightsDTO;
 import movies.moviesservice.entity.MovieStatus;
 
 import java.time.Instant;
@@ -32,4 +36,8 @@ public class MovieDTO {
     private String posterUrl;
     private Instant createdAt;
     private Instant updatedAt;
+
+    private Set<String> genres;
+    private String franchise;
+    private Set<MovieCastDto> cast;
 }

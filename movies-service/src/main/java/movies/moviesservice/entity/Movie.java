@@ -1,15 +1,11 @@
 package movies.moviesservice.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import movies.moviesservice.entity.ExternalRating.ExternalRating;
+import lombok.*;
 import movies.moviesservice.entity.Franchise.Franchise;
-import movies.moviesservice.entity.MovieMedia.MovieMedia;
 import movies.moviesservice.entity.Tag.Tag;
 import movies.moviesservice.entity.genre.Genre;
 import movies.moviesservice.entity.language.Language;
@@ -32,6 +28,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 @Builder
+@ToString(onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Movie {
     @Id
     @GeneratedValue
@@ -91,17 +89,12 @@ public class Movie {
     @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private Set<MovieMedia> media = new HashSet<>();
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private Set<ExternalRating> externalRatings = new HashSet<>();
-
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private Set<MovieCast> cast = new HashSet<>();
+    @JsonManagedReference
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<MovieCast> cast;
 
     @Version
     private Long version;

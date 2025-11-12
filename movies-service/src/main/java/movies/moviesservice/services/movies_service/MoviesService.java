@@ -1,22 +1,28 @@
 // java
 package movies.moviesservice.services.movies_service;
 
+
 import jakarta.persistence.EntityNotFoundException;
-import movies.moviesservice.dtos.*;
+import movies.moviesservice.dtos.MovieDTO;
+import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
 import movies.moviesservice.Mappers.MovieMapper.MovieMapper;
 import movies.moviesservice.entity.Movie;
+import movies.moviesservice.entity.language.Language;
+import movies.moviesservice.entity.genre.Genre;
+import movies.moviesservice.entity.Franchise.Franchise;
+import movies.moviesservice.entity.Tag.Tag;
+import movies.moviesservice.entity.movieCast.MovieCast;
+import movies.moviesservice.entity.person.Person;
 import movies.moviesservice.repository.movies_repo.MoviesRepository;
+import movies.moviesservice.repository.language.LanguageRepository;
+import movies.moviesservice.repository.GenreRepository.GenreRepository;
+import movies.moviesservice.repository.franchiseRepository.franchiseRepository;
+import movies.moviesservice.repository.TagRepository.TagRepository;
+import movies.moviesservice.repository.PersonRepository.PersonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import movies.moviesservice.entity.language.Language;
-import movies.moviesservice.entity.genre.Genre;
-import movies.moviesservice.entity.Franchise.Franchise;
-import movies.moviesservice.entity.movieCast.MovieCast;
-import movies.moviesservice.entity.person.Person;
-//import movies.moviesservice.entity.MovieMedia.MovieMedia;
-//import movies.moviesservice.entity.ExternalRating.ExternalRating;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
@@ -28,117 +34,113 @@ public class MoviesService {
 
     private final MoviesRepository moviesRepository;
     private final MovieMapper movieMapper;
+    private final LanguageRepository languageRepository;
+    private final GenreRepository genreRepository;
+    private final franchiseRepository franchiseRepository;
+    private final TagRepository tagRepository;
+    private final PersonRepository personRepository;
 
     @Autowired
-    public MoviesService(MoviesRepository moviesRepository, MovieMapper movieMapper) {
+    public MoviesService(
+            MoviesRepository moviesRepository,
+            MovieMapper movieMapper,
+            LanguageRepository languageRepository,
+            GenreRepository genreRepository,
+            franchiseRepository franchiseRepository,
+            TagRepository tagRepository,
+            PersonRepository personRepository) {
         this.moviesRepository = moviesRepository;
         this.movieMapper = movieMapper;
+        this.languageRepository = languageRepository;
+        this.genreRepository = genreRepository;
+        this.franchiseRepository = franchiseRepository;
+        this.tagRepository = tagRepository;
+        this.personRepository = personRepository;
     }
 
-    public MovieDTO createMovie(MovieDTO dto) {
-        if (dto == null) throw new IllegalArgumentException("Movie data is required");
+    private Language findLanguageByCode(String code) {
+        return languageRepository.findByCode(code)
+                .orElseThrow(() -> new EntityNotFoundException("Language not found: " + code));
+    }
 
-        String title = dto.getTitle();
-        if (title != null && moviesRepository.existsByTitleIgnoreCase(title)) {
+    private Genre findGenreByCode(String code) {
+        return genreRepository.findByCode(code)
+                .orElseThrow(() -> new EntityNotFoundException("Genre not found: " + code));
+    }
+
+    private Franchise findFranchiseByCode(String code) {
+        return franchiseRepository.findByCode(code)
+                .orElseThrow(() -> new EntityNotFoundException("Franchise not found: " + code));
+    }
+
+    private Tag findTagByCode(String code) {
+        return tagRepository.findByCode(code)
+                .orElseThrow(() -> new EntityNotFoundException("Tag not found: " + code));
+    }
+
+    private Person findPersonByCode(String code) {
+        return personRepository.findByCode(code)
+                .orElseThrow(() -> new EntityNotFoundException("Person not found: " + code));
+    }
+
+    @Transactional
+    public MovieDTO createMovie(MovieDTO dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Movie data is required");
+        }
+
+        if (dto.getTitle() != null && moviesRepository.existsByTitleIgnoreCase(dto.getTitle())) {
             throw new IllegalArgumentException("Movie with the same title already exists");
         }
 
-        // mapper creates base entity but relations were ignored on purpose in mapper
         Movie movie = movieMapper.toEntity(dto);
+        movie.setCode(null); // Let @PrePersist generate code
 
-        // ensure code is not set from dto
-        movie.setCode(null);
-
-        // populate relations manually from DTO
-        if (dto.getLanguages() != null) {
-            Set<Language> languageEntities = dto.getLanguages().stream()
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .map(name -> {
-                        Language lang = new Language();
-                        lang.setName(name);
-                        return lang;
-                    })
+        // Resolve language codes to entities
+        if (dto.getLanguageCodes() != null && !dto.getLanguageCodes().isEmpty()) {
+            Set<Language> languages = dto.getLanguageCodes().stream()
+                    .map(this::findLanguageByCode)
                     .collect(Collectors.toSet());
-            movie.setLanguages(languageEntities);
-        } else {
-            movie.setLanguages(new HashSet<>());
+            movie.setLanguages(languages);
         }
 
-        if (dto.getGenres() != null) {
-            Set<Genre> genreEntities = dto.getGenres().stream()
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .map(name -> {
-                        Genre g = new Genre();
-                        g.setName(name);
-                        return g;
-                    })
+        // Resolve genre codes
+        if (dto.getGenreCodes() != null && !dto.getGenreCodes().isEmpty()) {
+            Set<Genre> genres = dto.getGenreCodes().stream()
+                    .map(this::findGenreByCode)
                     .collect(Collectors.toSet());
-            movie.setGenres(genreEntities);
-        } else {
-            movie.setGenres(new HashSet<>());
+            movie.setGenres(genres);
         }
 
-        if (dto.getFranchise() != null && !dto.getFranchise().isBlank()) {
-            Franchise f = new Franchise();
-            f.setName(dto.getFranchise().trim());
-            movie.setFranchise(f);
-        } else {
-            movie.setFranchise(null);
+        // Resolve franchise code
+        if (dto.getFranchiseCode() != null && !dto.getFranchiseCode().isBlank()) {
+            Franchise franchise = findFranchiseByCode(dto.getFranchiseCode());
+            movie.setFranchise(franchise);
         }
 
-//        if (dto.getCast() != null) {
+        // Resolve tag codes
+        if (dto.getTagCodes() != null && !dto.getTagCodes().isEmpty()) {
+            Set<Tag> tags = dto.getTagCodes().stream()
+                    .map(this::findTagByCode)
+                    .collect(Collectors.toSet());
+            movie.setTags(tags);
+        }
+
+        // Resolve cast person codes
+//        if (dto.getCast() != null && !dto.getCast().isEmpty()) {
 //            Set<MovieCast> castEntities = dto.getCast().stream()
-//                    .map(cdto -> {
-//                        MovieCast mc = new MovieCast();
-//                        Person p = new Person();
-//                        if (cdto.getPersonId() != null) p.setId(cdto.getPersonId());
-//                        if (cdto.getPersonName() != null) p.setName(cdto.getPersonName());
-//                        mc.setPerson(p);
-//                        // Convert CastRole enum to String for storage
-//                        mc.setRole(cdto.getRole() != null ? cdto.getRole().name() : null);
-//                        mc.setCharacterName(cdto.getCharacterName());
-//                        mc.setMovie(movie);
+//                    .map(castDto -> {
+//                        MovieCast mc = MovieCast.builder()
+//                                .person(findPersonByCode(castDto.getPersonCode()))
+//                                .role(castDto.getRole())
+//                                .characterName(castDto.getCharacterName())
+//                                .movie(movie)
+//                                .build();
 //                        return mc;
 //                    })
 //                    .collect(Collectors.toSet());
 //            movie.setCast(castEntities);
-//        } else {
-//            movie.setCast(new HashSet<>());
 //        }
-
-//        if (dto.getMedia() != null) {
-//            Set<MovieMedia> mediaEntities = dto.getMedia().stream()
-//                    .map(md -> {
-//                        MovieMedia mm = new MovieMedia();
-//                        mm.setType(md.getType());
-//                        mm.setUrl(md.getUrl());
-//                        mm.setMovie(movie);
-//                        return mm;
-//                    })
-//                    .collect(Collectors.toSet());
-//            movie.setMedia(mediaEntities);
-//        } else {
-//            movie.setMedia(new HashSet<>());
-//        }
-//
-//        if (dto.getExternalRatings() != null) {
-//            Set<ExternalRating> ratingEntities = dto.getExternalRatings().stream()
-//                    .map(rd -> {
-//                        ExternalRating er = new ExternalRating();
-//                        er.setSource(rd.getSource());
-//                        er.setRating(rd.getRating());
-//                        er.setMovie(movie);
-//                        return er;
-//                    })
-//                    .collect(Collectors.toSet());
-//            movie.setExternalRatings(ratingEntities);
-//        } else {
-//            movie.setExternalRatings(new HashSet<>());
-//        }
-
-        // regionRights: if Movie entity no longer has regionRights field, it will remain null
 
         Movie savedMovie = moviesRepository.save(movie);
         return movieMapper.toDTO(savedMovie);
@@ -150,39 +152,77 @@ public class MoviesService {
         return movieMapper.toDTO(movie);
     }
 
+    @Transactional
     public MovieDTO updateMovie(String code, MovieDTO dto) {
         Movie movie = moviesRepository.findByCode(code)
                 .orElseThrow(() -> new EntityNotFoundException("Movie not found with code: " + code));
 
-        // Update fields except code
+        // Update basic fields
         if (dto.getTitle() != null && !dto.getTitle().equalsIgnoreCase(movie.getTitle())) {
             if (moviesRepository.existsByTitleIgnoreCase(dto.getTitle())) {
                 throw new IllegalArgumentException("Movie with the same title already exists");
             }
             movie.setTitle(dto.getTitle());
         }
+
         if (dto.getSynopsis() != null) movie.setSynopsis(dto.getSynopsis());
-        if (dto.getDurationMinutes() > 0) {
+        if (dto.getDurationMinutes() != null && dto.getDurationMinutes() > 0) {
             movie.setDurationMinutes(dto.getDurationMinutes());
         }
         if (dto.getReleaseDate() != null) movie.setReleaseDate(dto.getReleaseDate());
-        if (dto.getLanguages() != null) {
-            Set<Language> languageEntities = dto.getLanguages().stream()
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .map(name -> {
-                        Language lang = new Language();
-                        lang.setName(name);
-                        return lang;
-                    })
-                    .collect(Collectors.toSet());
-            movie.setLanguages(languageEntities);
-        }
         if (dto.getCertification() != null) movie.setCertification(dto.getCertification());
         if (dto.getStatus() != null) movie.setStatus(dto.getStatus());
         if (dto.getPosterUrl() != null) movie.setPosterUrl(dto.getPosterUrl());
-        if (dto.getCreatedAt() != null) movie.setCreatedAt(dto.getCreatedAt());
-        if (dto.getUpdatedAt() != null) movie.setUpdatedAt(dto.getUpdatedAt());
+        if (dto.getBannerUrl() != null) movie.setBannerUrl(dto.getBannerUrl());
+        if (dto.getImdbRating() != null) movie.setImdbRating(dto.getImdbRating());
+
+        // Update language codes
+        if (dto.getLanguageCodes() != null) {
+            Set<Language> languages = dto.getLanguageCodes().stream()
+                    .map(this::findLanguageByCode)
+                    .collect(Collectors.toSet());
+            movie.setLanguages(languages);
+        }
+
+        // Update genre codes
+        if (dto.getGenreCodes() != null) {
+            Set<Genre> genres = dto.getGenreCodes().stream()
+                    .map(this::findGenreByCode)
+                    .collect(Collectors.toSet());
+            movie.setGenres(genres);
+        }
+
+        // Update franchise code
+        if (dto.getFranchiseCode() != null) {
+            if (dto.getFranchiseCode().isBlank()) {
+                movie.setFranchise(null);
+            } else {
+                Franchise franchise = findFranchiseByCode(dto.getFranchiseCode());
+                movie.setFranchise(franchise);
+            }
+        }
+
+        // Update tag codes
+        if (dto.getTagCodes() != null) {
+            Set<Tag> tags = dto.getTagCodes().stream()
+                    .map(this::findTagByCode)
+                    .collect(Collectors.toSet());
+            movie.setTags(tags);
+        }
+
+        // Update cast
+//        if (dto.getCast() != null) {
+//            movie.getCast().clear();
+//            Set<MovieCast> castEntities = dto.getCast().stream()
+//                    .map(castDto -> MovieCast.builder()
+//                            .person(findPersonByCode(castDto.getPersonCode()))
+//                            .role(castDto.getRole())
+//                            .characterName(castDto.getCharacterName())
+//                            .movie(movie)
+//                            .build())
+//                    .collect(Collectors.toSet());
+//            movie.setCast(castEntities);
+//        }
 
         Movie updatedMovie = moviesRepository.save(movie);
         return movieMapper.toDTO(updatedMovie);
@@ -201,3 +241,4 @@ public class MoviesService {
                 .map(movieMapper::toDTO);
     }
 }
+

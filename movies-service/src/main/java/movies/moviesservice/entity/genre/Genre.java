@@ -39,7 +39,7 @@ public class Genre {
     @PrePersist
     public void onPrePersist() {
         if (this.code == null) {
-            this.code = "lang-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+            this.code = "gen-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
         }
         Instant now = Instant.now();
         if (this.createdAt == null) this.createdAt = now;

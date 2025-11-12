@@ -3,7 +3,6 @@ package movies.moviesservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import movies.moviesservice.entity.Franchise.Franchise;
 import movies.moviesservice.entity.Tag.Tag;
@@ -12,7 +11,6 @@ import movies.moviesservice.entity.language.Language;
 import movies.moviesservice.entity.movieCast.MovieCast;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.annotation.Version;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
@@ -32,13 +30,15 @@ import java.util.UUID;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Movie {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, updatable = false)
+    @Column(nullable = false, length = 16, unique = true)
+    @ToString.Include
+    @EqualsAndHashCode.Include
     private String code;
 
-    @Column(nullable = false, length = 30,unique = true)
+    @Column(nullable = false)
     private String title;
 
     @Column(length = 2000)
@@ -46,12 +46,10 @@ public class Movie {
 
     private int durationMinutes;
     private LocalDate releaseDate;
-
-//    private Set<languages> languages = new HashSet<>();
-
     private String certification;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 32)
     private MovieStatus status;
 
     private String posterUrl;
@@ -89,40 +87,33 @@ public class Movie {
     @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
+//    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonManagedReference
+//    @Builder.Default
+//    @ToString.Exclude
+//    @EqualsAndHashCode.Exclude
+//    private Set<MovieCast> cast = new HashSet<>();
 
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Set<MovieCast> cast;
-
-    @Version
-    private Long version;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @CreatedDate
     private Instant createdAt;
 
+    @Column(name = "updated_at", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @LastModifiedDate
-    @Column(nullable = false)
     private Instant updatedAt;
 
     @PrePersist
-    public void generateCode() {
+    public void onPrePersist() {
         if (this.code == null) {
-            this.code = "movie-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+            this.code = "mov-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
         }
+        Instant now = Instant.now();
+        if (this.createdAt == null) this.createdAt = now;
+        this.updatedAt = now;
     }
 
-//    public void setLanguages(@NotNull Set<languages> languages) {
-//        this.languages.clear();
-//        this.languages.addAll(languages);
-//    }
-//    @ManyToMany
-//    @JoinTable(
-//            name = "movie_genres",
-//            joinColumns = @JoinColumn(name = "movie_id"),
-//            inverseJoinColumns = @JoinColumn(name = "genre_id")
-//    )
-//    private Set<Genre> genres = new HashSet<>();
+    @PreUpdate
+    public void onPreUpdate() {
+        this.updatedAt = Instant.now();
+    }
 }

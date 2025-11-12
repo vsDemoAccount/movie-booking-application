@@ -1,14 +1,14 @@
 package movies.moviesservice.Mappers.MovieMapper;
 
 
-import movies.moviesservice.dtos.*;
+import movies.moviesservice.dtos.MovieDTO;
 import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
-import movies.moviesservice.entity.*;
-
-import movies.moviesservice.entity.movieCast.MovieCast;
+import movies.moviesservice.entity.Movie;
+import movies.moviesservice.entity.Franchise.Franchise;
+import movies.moviesservice.entity.Tag.Tag;
 import movies.moviesservice.entity.genre.Genre;
 import movies.moviesservice.entity.language.Language;
-import movies.moviesservice.entity.CastRole;
+import movies.moviesservice.entity.movieCast.MovieCast;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -21,33 +21,44 @@ import java.util.stream.Collectors;
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface MovieMapper {
 
-    @Mapping(target = "languages", source = "languages", qualifiedByName = "languagesToStringSet")
-    @Mapping(target = "genres", source = "genres", qualifiedByName = "genresToStringSet")
-    @Mapping(target = "franchise", source = "franchise", qualifiedByName = "franchiseToName")
-    @Mapping(target = "cast", source = "cast", qualifiedByName = "castToDto")
+    @Mapping(target = "languageCodes", source = "languages", qualifiedByName = "languagesToCodes")
+    @Mapping(target = "genreCodes", source = "genres", qualifiedByName = "genresToCodes")
+    @Mapping(target = "tagCodes", source = "tags", qualifiedByName = "tagsToCodes")
+    @Mapping(target = "franchiseCode", source = "franchise", qualifiedByName = "franchiseToCode")
+//    @Mapping(target = "cast", source = "cast", qualifiedByName = "castToDto")
     MovieDTO toDTO(Movie movie);
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "languages", ignore = true)
     @Mapping(target = "genres", ignore = true)
+    @Mapping(target = "tags", ignore = true)
     @Mapping(target = "franchise", ignore = true)
-    @Mapping(target = "cast", ignore = true)
+//    @Mapping(target = "cast", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Movie toEntity(MovieDTO dto);
 
-    @Named("languagesToStringSet")
-    default Set<String> languagesToStringSet(Set<Language> languages) {
+    @Named("languagesToCodes")
+    default Set<String> languagesToCodes(Set<Language> languages) {
         if (languages == null) return null;
-        return languages.stream().map(Language::getName).collect(Collectors.toSet());
+        return languages.stream().map(Language::getCode).collect(Collectors.toSet());
     }
 
-    @Named("genresToStringSet")
-    default Set<String> genresToStringSet(Set<Genre> genres) {
+    @Named("genresToCodes")
+    default Set<String> genresToCodes(Set<Genre> genres) {
         if (genres == null) return null;
-        return genres.stream().map(Genre::getName).collect(Collectors.toSet());
+        return genres.stream().map(Genre::getCode).collect(Collectors.toSet());
     }
 
-    @Named("franchiseToName")
-    default String franchiseToName(movies.moviesservice.entity.Franchise.Franchise f) {
-        return f == null ? null : f.getName();
+    @Named("tagsToCodes")
+    default Set<String> tagsToCodes(Set<Tag> tags) {
+        if (tags == null) return null;
+        return tags.stream().map(Tag::getCode).collect(Collectors.toSet());
+    }
+
+    @Named("franchiseToCode")
+    default String franchiseToCode(Franchise franchise) {
+        return franchise == null ? null : franchise.getCode();
     }
 
     @Named("castToDto")
@@ -56,15 +67,9 @@ public interface MovieMapper {
         return cast.stream().map(c -> MovieCastDto.builder()
                 .personCode(c.getPerson() != null ? c.getPerson().getCode() : null)
                 .personName(c.getPerson() != null ? c.getPerson().getName() : null)
-                .role(convertToCastRole(c.getRole()))
+                .role(c.getRole())
                 .characterName(c.getCharacterName())
                 .build()).collect(Collectors.toSet());
-    }
-
-    // accept enum directly (identity) to match MovieCast.getRole() which returns CastRole
-    default CastRole convertToCastRole(CastRole role) {
-        return role;
-
     }
 }
 

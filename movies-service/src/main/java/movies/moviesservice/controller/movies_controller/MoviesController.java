@@ -1,8 +1,6 @@
 package movies.moviesservice.controller.movies_controller;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import movies.moviesservice.dtos.MovieDTO;
 import movies.moviesservice.services.movies_service.MoviesService;
 import movies.moviesservice.utils.ApiResponse;
@@ -28,12 +26,13 @@ public class MoviesController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<MovieDTO>> createMovie(@Validated(Create.class) @RequestBody MovieDTO movieDto) {
+    public ResponseEntity<ApiResponse<MovieDTO>> createMovie(
+            @Validated(Create.class) @RequestBody MovieDTO movieDto) {
         try {
             MovieDTO savedMovie = moviesService.createMovie(movieDto);
             ApiResponse<MovieDTO> response = ApiResponse.ok("Movie created successfully", savedMovie);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
             ApiResponse<MovieDTO> response = ApiResponse.error(e.getMessage(), null);
             return ResponseEntity.badRequest().body(response);
         }
@@ -50,9 +49,9 @@ public class MoviesController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
     }
-    // PATCH endpoint for updating a movie
+
     @PatchMapping("/{code}")
-    public ResponseEntity<ApiResponse<MovieDTO>> updateMovie(@Validated(Create.class)
+    public ResponseEntity<ApiResponse<MovieDTO>> updateMovie(
             @PathVariable String code,
             @RequestBody MovieDTO movieDto) {
         try {
@@ -65,7 +64,6 @@ public class MoviesController {
         }
     }
 
-    // DELETE endpoint for deleting a movie
     @DeleteMapping("/{code}")
     public ResponseEntity<ApiResponse<Void>> deleteMovie(@PathVariable String code) {
         try {

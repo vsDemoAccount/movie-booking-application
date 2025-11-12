@@ -1,15 +1,17 @@
 package movies.moviesservice.dtos;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-//import movies.moviesservice.dtos.ExternalRatingDTO.ExternalRatingDTO;
 import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
-//import movies.moviesservice.dtos.MovieMediaDTO.MovieMediaDTO;
-//import movies.moviesservice.dtos.RegionRightsDTO.RegionRightsDTO;
 import movies.moviesservice.entity.MovieStatus;
+import movies.moviesservice.validations.onCreate.Create;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,25 +21,38 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MovieDTO {
     private String code;
-    @NotNull
+
+    @NotBlank(message = "Title is required", groups = Create.class)
     private String title;
+
     private String synopsis;
-    private int durationMinutes;
-    @NotNull
+
+    @Positive(message = "Duration must be positive")
+    private Integer durationMinutes;
+
+    @NotNull(message = "Release date is required", groups = Create.class)
     private LocalDate releaseDate;
-    // Use simple String set for transport to avoid exposing internal entity types
-    @NotNull
-    private Set<String> languages;
-    @NotNull
+
+    @NotEmpty(message = "At least one language is required", groups = Create.class)
+    private Set<String> languageCodes;
+
+    @NotBlank(message = "Certification is required", groups = Create.class)
     private String certification;
+
     private MovieStatus status;
     private String posterUrl;
+    private String bannerUrl;
+    private Double imdbRating;
+
+    private String franchiseCode;
+    private Set<String> genreCodes;
+    private Set<String> tagCodes;
+//    private Set<MovieCastDto> cast;
+
     private Instant createdAt;
     private Instant updatedAt;
-
-    private Set<String> genres;
-    private String franchise;
-    private Set<MovieCastDto> cast;
 }
+

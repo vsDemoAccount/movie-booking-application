@@ -1,6 +1,7 @@
 package movies.moviesservice.Mappers.MovieMapper;
 
 
+
 import movies.moviesservice.dtos.MovieDTO;
 import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
 import movies.moviesservice.entity.Movie;
@@ -25,15 +26,14 @@ public interface MovieMapper {
     @Mapping(target = "genreCodes", source = "genres", qualifiedByName = "genresToCodes")
     @Mapping(target = "tagCodes", source = "tags", qualifiedByName = "tagsToCodes")
     @Mapping(target = "franchiseCode", source = "franchise", qualifiedByName = "franchiseToCode")
-//    @Mapping(target = "cast", source = "cast", qualifiedByName = "castToDto")
     MovieDTO toDTO(Movie movie);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "code", ignore = true)
     @Mapping(target = "languages", ignore = true)
     @Mapping(target = "genres", ignore = true)
     @Mapping(target = "tags", ignore = true)
     @Mapping(target = "franchise", ignore = true)
-//    @Mapping(target = "cast", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Movie toEntity(MovieDTO dto);
@@ -59,17 +59,6 @@ public interface MovieMapper {
     @Named("franchiseToCode")
     default String franchiseToCode(Franchise franchise) {
         return franchise == null ? null : franchise.getCode();
-    }
-
-    @Named("castToDto")
-    default Set<MovieCastDto> castToDto(Set<MovieCast> cast) {
-        if (cast == null) return null;
-        return cast.stream().map(c -> MovieCastDto.builder()
-                .personCode(c.getPerson() != null ? c.getPerson().getCode() : null)
-                .personName(c.getPerson() != null ? c.getPerson().getName() : null)
-                .role(c.getRole())
-                .characterName(c.getCharacterName())
-                .build()).collect(Collectors.toSet());
     }
 }
 

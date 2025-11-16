@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import movies.moviesservice.Mappers.franchiseMapper.franchiseMapper;
 import movies.moviesservice.dtos.franchiseDTO.franchiseDTO;
 import movies.moviesservice.entity.Franchise.Franchise;
+import movies.moviesservice.exception.ResourceNotFoundException;
+import movies.moviesservice.exception.ValidationException;
 import movies.moviesservice.repository.franchiseRepository.franchiseRepository;
 import movies.moviesservice.service_Interface.franchiseService.franchiseService;
 import org.springframework.http.HttpStatus;
@@ -42,13 +44,13 @@ public class franchiseServiceImpl implements franchiseService {
     public franchiseDTO getByCode(String code) {
         return repository.findByCode(code)
                 .map(franchiseMapper::toDto)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Franchise not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Franchise not found"));
     }
 
     @Override
     public franchiseDTO updateByCode(String code, franchiseDTO dto) {
         Franchise entity = repository.findByCode(code)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Franchise not found"));
+                .orElseThrow(() -> new ResourceNotFoundException( "Franchise not found"));
         franchiseMapper.updateEntityFromDto(dto, entity);
         entity.setCode(code);
         Franchise saved = repository.save(entity);
@@ -59,7 +61,7 @@ public class franchiseServiceImpl implements franchiseService {
     @Transactional
     public void deleteByCode(String code) {
         if (!repository.existsByCode(code)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Franchise not found");
+            throw new ValidationException("Franchise not found");
         }
         repository.deleteByCode(code);
     }

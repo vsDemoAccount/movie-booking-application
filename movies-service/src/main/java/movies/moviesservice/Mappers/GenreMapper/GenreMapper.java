@@ -21,7 +21,6 @@ public class GenreMapper {
     public GenreDto toDto(Genre entity) {
         if (entity == null) return null;
         return GenreDto.builder()
-                .name(entity.getName())
                 .code(entity.getCode())
                 .build();
     }

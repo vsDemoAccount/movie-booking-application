@@ -94,7 +94,7 @@ public class MoviesService {
         }
 
         Movie movie = movieMapper.toEntity(dto);
-        movie.setCode(null); // Let @PrePersist generate code
+        // Remove: movie.setCode(null); - let @PrePersist handle it
 
         // Resolve language codes to entities
         if (dto.getLanguageCodes() != null && !dto.getLanguageCodes().isEmpty()) {
@@ -126,25 +126,10 @@ public class MoviesService {
             movie.setTags(tags);
         }
 
-        // Resolve cast person codes
-//        if (dto.getCast() != null && !dto.getCast().isEmpty()) {
-//            Set<MovieCast> castEntities = dto.getCast().stream()
-//                    .map(castDto -> {
-//                        MovieCast mc = MovieCast.builder()
-//                                .person(findPersonByCode(castDto.getPersonCode()))
-//                                .role(castDto.getRole())
-//                                .characterName(castDto.getCharacterName())
-//                                .movie(movie)
-//                                .build();
-//                        return mc;
-//                    })
-//                    .collect(Collectors.toSet());
-//            movie.setCast(castEntities);
-//        }
-
         Movie savedMovie = moviesRepository.save(movie);
         return movieMapper.toDTO(savedMovie);
     }
+
 
     public MovieDTO getMovieByCode(String code) {
         Movie movie = moviesRepository.findByCode(code)

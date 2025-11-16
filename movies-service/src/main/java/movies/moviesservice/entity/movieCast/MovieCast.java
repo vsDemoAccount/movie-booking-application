@@ -63,4 +63,8 @@ public class MovieCast {
             this.createdAt = Instant.now(); // stored in UTC
         }
     }
+    @PreUpdate
+    public void onPreUpdate() {
+        this.updatedAt = Instant.now();
+    }
 }

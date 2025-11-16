@@ -1,6 +1,8 @@
 package movies.moviesservice.dtos;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -23,6 +25,9 @@ import java.util.Set;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MovieDTO {
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private String code;
 
     @NotBlank(message = "Title is required", groups = Create.class)
@@ -52,7 +57,6 @@ public class MovieDTO {
     private Set<String> tagCodes;
 //    private Set<MovieCastDto> cast;
 
-    private Instant createdAt;
-    private Instant updatedAt;
+
 }
 

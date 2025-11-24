@@ -8,7 +8,7 @@ import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
 import movies.moviesservice.services.MovieCastService.MovieCastService;
 
 @RestController
-@RequestMapping("/api/movie-casts")
+@RequestMapping("/api/movies/movie-casts")
 public class MovieCastController {
     private final MovieCastService service;
 

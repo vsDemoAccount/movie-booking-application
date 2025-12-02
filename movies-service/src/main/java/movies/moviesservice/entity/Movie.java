@@ -87,13 +87,6 @@ public class Movie {
     @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
-//    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @JsonManagedReference
-//    @Builder.Default
-//    @ToString.Exclude
-//    @EqualsAndHashCode.Exclude
-//    private Set<MovieCast> cast = new HashSet<>();
-
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @CreatedDate
     private Instant createdAt;

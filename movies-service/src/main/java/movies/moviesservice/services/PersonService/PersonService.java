@@ -1,6 +1,8 @@
 package movies.moviesservice.services.PersonService;
 
 
+import movies.moviesservice.exception.ResourceNotFoundException;
+import movies.moviesservice.exception.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import movies.moviesservice.repository.PersonRepository.PersonRepository;
@@ -23,7 +25,7 @@ public class PersonService {
 
     public PersonDto create(PersonDto dto) {
         if (dto.code != null && personRepository.existsByCode(dto.code)) {
-            throw new IllegalArgumentException("Person with code already exists");
+            throw new ValidationException("Person with code already exists");
         }
         Person entity = mapper.toEntity(dto);
         Person saved = personRepository.save(entity);
@@ -32,7 +34,7 @@ public class PersonService {
 
     public PersonDto updateByCode(String code, PersonDto dto) {
         Person existing = personRepository.findByCode(code)
-                .orElseThrow(() -> new IllegalArgumentException("Person not found for code: " + code));
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found for code: " + code));
         existing.setName(dto.name);
         existing.setBirthDate(dto.birthDate);
         existing.setBio(dto.bio);
@@ -44,7 +46,7 @@ public class PersonService {
     @Transactional(readOnly = true)
     public PersonDto findByCode(String code) {
         return personRepository.findByCode(code).map(mapper::toDto)
-                .orElseThrow(() -> new IllegalArgumentException("Person not found for code: " + code));
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found for code: " + code));
     }
 }
 

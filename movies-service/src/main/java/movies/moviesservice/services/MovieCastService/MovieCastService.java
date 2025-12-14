@@ -1,6 +1,8 @@
 // java
 package movies.moviesservice.services.MovieCastService;
 
+import movies.moviesservice.exception.ResourceNotFoundException;
+import movies.moviesservice.exception.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
@@ -28,7 +30,7 @@ public class MovieCastService {
 
     public MovieCastDto create(MovieCastDto dto) {
         if (dto.getCode() != null && castRepository.existsByCode(dto.getCode())) {
-            throw new IllegalArgumentException("MovieCast with code already exists");
+            throw new ValidationException("MovieCast with code already exists");
         }
         MovieCast entity = mapper.toEntity(dto);
         MovieCast saved = castRepository.save(entity);
@@ -37,21 +39,23 @@ public class MovieCastService {
 
     public MovieCastDto findByCode(String code) {
         return castRepository.findByCode(code).map(mapper::toDto)
-                .orElseThrow(() -> new IllegalArgumentException("MovieCast not found for code: " + code));
+                .orElseThrow(() -> new ResourceNotFoundException("MovieCast not found for code: " + code));
     }
 
     public MovieCastDto updateByCode(String code, MovieCastDto dto) {
         MovieCast existing = castRepository.findByCode(code)
-                .orElseThrow(() -> new IllegalArgumentException("MovieCast not found for code: " + code));
+                .orElseThrow(() -> new ResourceNotFoundException("MovieCast not found for code: " + code));
 
         if (dto.getPersonCode() != null) {
             personRepository.findByCode(dto.getPersonCode())
-                    .ifPresent(existing::setPerson);
+                    .orElseThrow(() -> new ResourceNotFoundException("Person not found for code: " + dto.getPersonCode()));
+            personRepository.findByCode(dto.getPersonCode()).ifPresent(existing::setPerson);
         }
 
         if (dto.getMovieCode() != null) {
             movieRepository.findByCode(dto.getMovieCode())
-                    .ifPresent(existing::setMovie);
+                    .orElseThrow(() -> new ResourceNotFoundException("Movie not found for code: " + dto.getMovieCode()));
+            movieRepository.findByCode(dto.getMovieCode()).ifPresent(existing::setMovie);
         }
 
         if (dto.getCharacterName() != null) {

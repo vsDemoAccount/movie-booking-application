@@ -8,7 +8,7 @@ import movies.moviesservice.dtos.PersonDTO.PersonDto;
 import movies.moviesservice.services.PersonService.PersonService;
 
 @RestController
-@RequestMapping("/api/persons")
+@RequestMapping("/api/movies/persons")
 public class PersonController {
     private final PersonService service;
 

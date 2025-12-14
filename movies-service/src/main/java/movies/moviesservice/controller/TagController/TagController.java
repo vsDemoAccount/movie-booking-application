@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/tags")
+@RequestMapping("/api/movies/tags")
 @RequiredArgsConstructor
 @Tag(name = "Tag Management", description = "APIs for managing movie tags")
 public class TagController {

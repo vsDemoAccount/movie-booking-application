@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/franchises")
+@RequestMapping("/api/movies/admin/franchises")
 @RequiredArgsConstructor
 public class franchiseController {
 

@@ -23,8 +23,8 @@ public class GenreServiceImpl {
 
     public GenreDto create(GenreDto dto) {
         Genre genre = mapper.toEntity(dto);
-        Genre saved = repository.save(genre); // code generated in @PrePersist
-        return mapper.toDto(saved); // returns only code
+        Genre saved = repository.save(genre);
+        return mapper.toDto(saved);
     }
 
     @Transactional(readOnly = true)

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import movies.theatreservice.entity.Screen.Screen;
 import movies.theatreservice.entity.SeatType.SeatType;
+import movies.theatreservice.utils.CodeGeneratorUtil;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -37,8 +38,6 @@ public class Seat {
     @Column(nullable = false)
     private int seatNumber; // E.g., 1, 2
 
-    // Frontend Grid Mapping - Essential for drawing the seat map UI
-    // Example: Row A might be Grid Row 0, Seat 1 might be Grid Col 5 (to account for aisle gap)
     private int gridRow;
     private int gridCol;
 
@@ -55,7 +54,9 @@ public class Seat {
     @PrePersist
     public void onPrePersist() {
         if (this.code == null) {
-            this.code = "set-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+            // UPDATED: Using the utility for safer, cleaner generation
+            // "Cit-" is 4 chars, leaving 12 chars for randomness (Total 16)
+            this.code = CodeGeneratorUtil.generate("Sea", 12);
         }
         Instant now = Instant.now();
         if (this.createdAt == null) this.createdAt = now;

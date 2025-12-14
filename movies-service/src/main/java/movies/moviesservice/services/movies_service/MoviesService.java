@@ -2,10 +2,16 @@
 package movies.moviesservice.services.movies_service;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import movies.moviesservice.controller.MovieEventProducer.MovieEventProducer;
+import movies.moviesservice.dtos.MovieCreatedEvent_kfk.MovieCreatedEvent;
 import movies.moviesservice.dtos.MovieDTO;
 import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
 import movies.moviesservice.Mappers.MovieMapper.MovieMapper;
+import movies.moviesservice.entity.FailedEvent.FailedEvent;
 import movies.moviesservice.entity.Movie;
 import movies.moviesservice.entity.language.Language;
 import movies.moviesservice.entity.genre.Genre;
@@ -13,6 +19,7 @@ import movies.moviesservice.entity.Franchise.Franchise;
 import movies.moviesservice.entity.Tag.Tag;
 import movies.moviesservice.entity.movieCast.MovieCast;
 import movies.moviesservice.entity.person.Person;
+import movies.moviesservice.repository.FailedEventRepository.FailedEventRepository;
 import movies.moviesservice.repository.movies_repo.MoviesRepository;
 import movies.moviesservice.repository.language.LanguageRepository;
 import movies.moviesservice.repository.GenreRepository.GenreRepository;
@@ -25,6 +32,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +47,11 @@ public class MoviesService {
     private final franchiseRepository franchiseRepository;
     private final TagRepository tagRepository;
     private final PersonRepository personRepository;
+    private final MovieEventProducer movieEventProducer;
+
+    private final FailedEventRepository failedEventRepository;
+    private final ObjectMapper objectMapper;
+
 
     @Autowired
     public MoviesService(
@@ -48,7 +61,7 @@ public class MoviesService {
             GenreRepository genreRepository,
             franchiseRepository franchiseRepository,
             TagRepository tagRepository,
-            PersonRepository personRepository) {
+            PersonRepository personRepository, MovieEventProducer movieEventProducer, FailedEventRepository failedEventRepository, ObjectMapper objectMapper) {
         this.moviesRepository = moviesRepository;
         this.movieMapper = movieMapper;
         this.languageRepository = languageRepository;
@@ -56,6 +69,9 @@ public class MoviesService {
         this.franchiseRepository = franchiseRepository;
         this.tagRepository = tagRepository;
         this.personRepository = personRepository;
+        this.movieEventProducer = movieEventProducer;
+        this.failedEventRepository = failedEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     private Language findLanguageByCode(String code) {
@@ -127,9 +143,45 @@ public class MoviesService {
         }
 
         Movie savedMovie = moviesRepository.save(movie);
+
+        MovieCreatedEvent event = MovieCreatedEvent.builder()
+                .code(savedMovie.getCode())
+                .title(savedMovie.getTitle())
+                .durationMinutes(savedMovie.getDurationMinutes())
+                .posterUrl(savedMovie.getPosterUrl())
+                // Simple logic to get first genre name, or default to "General"
+                .genre(savedMovie.getGenres().isEmpty() ? "General" : savedMovie.getGenres().iterator().next().getName())
+                .build();
+
+        try {
+            movieEventProducer.sendMovieCreated(event);
+        } catch (Exception e) {
+            System.err.println("⚠️ Kafka is DOWN. Switching to Fallback: Saving event to DB.");
+            handleKafkaFailure(event, "movie-created-topic", e.getMessage());
+        }
+
         return movieMapper.toDTO(savedMovie);
     }
 
+    private void handleKafkaFailure(Object event, String topic, String errorMsg) {
+        try {
+            String payload = objectMapper.writeValueAsString(event);
+
+            FailedEvent failedEvent = FailedEvent.builder()
+                    .topic(topic)
+                    .payload(payload)
+                    .status("PENDING") // Status for the scheduler to pick up
+                    .errorMessage(errorMsg)
+                    .createdAt(Instant.now())
+                    .retryCount(0)
+                    .build();
+
+            failedEventRepository.save(failedEvent);
+
+        } catch (JsonProcessingException jsonEx) {
+            System.err.println("❌ Critical Error: Could not serialize event data: " + jsonEx.getMessage());
+        }
+    }
 
     public MovieDTO getMovieByCode(String code) {
         Movie movie = moviesRepository.findByCode(code)
@@ -194,20 +246,6 @@ public class MoviesService {
                     .collect(Collectors.toSet());
             movie.setTags(tags);
         }
-
-        // Update cast
-//        if (dto.getCast() != null) {
-//            movie.getCast().clear();
-//            Set<MovieCast> castEntities = dto.getCast().stream()
-//                    .map(castDto -> MovieCast.builder()
-//                            .person(findPersonByCode(castDto.getPersonCode()))
-//                            .role(castDto.getRole())
-//                            .characterName(castDto.getCharacterName())
-//                            .movie(movie)
-//                            .build())
-//                    .collect(Collectors.toSet());
-//            movie.setCast(castEntities);
-//        }
 
         Movie updatedMovie = moviesRepository.save(movie);
         return movieMapper.toDTO(updatedMovie);

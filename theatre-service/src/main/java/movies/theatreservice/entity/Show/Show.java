@@ -2,13 +2,15 @@ package movies.theatreservice.entity.Show;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import movies.theatreservice.entity.CatalogMovie_kfk.CatalogMovie;
 import movies.theatreservice.entity.Screen.Screen;
 import movies.theatreservice.entity.ShowSeatPrice.ShowSeatPrice;
+import movies.theatreservice.utils.CodeGeneratorUtil;
 
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 @Entity
 @Getter
@@ -25,17 +27,26 @@ public class Show {
     @Column(nullable = false, length = 16, unique = true)
     private String code;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "screen_id")
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "screen_id", nullable = false)
     private Screen screen;
 
-    // We store the Code from the Movie Service, not the object.
-    // This allows loose coupling between microservices.
-    @Column(nullable = false)
-    private String movieCode;
+    // --- CRITICAL CHANGE HERE ---
+    // DELETE: private String movieCode;
+    // ADD THIS INSTEAD:
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "movie_code", referencedColumnName = "code", nullable = false)
+    private CatalogMovie movie;
+    // ----------------------------
 
     @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant startTime;
+
+    // Helper method (depends on 'movie' being present)
+    public Instant getEndTime() {
+        if (this.movie == null || this.startTime == null) return null;
+        return this.startTime.plusSeconds(this.movie.getDurationMinutes() * 60L);
+    }
 
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant createdAt;
@@ -43,15 +54,14 @@ public class Show {
     @Column(name = "updated_at", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant updatedAt;
 
-    // One Show can have different prices for different seat types
-    @OneToMany(mappedBy = "show", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "show", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<ShowSeatPrice> prices = new HashSet<>();
 
     @PrePersist
     public void onPrePersist() {
         if (this.code == null) {
-            this.code = "sho-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+            this.code = CodeGeneratorUtil.generate("Sho", 12);
         }
         Instant now = Instant.now();
         if (this.createdAt == null) this.createdAt = now;

@@ -3,6 +3,8 @@ package movies.theatreservice.entity.SeatType;
 
 import jakarta.persistence.*;
 import lombok.*;
+import movies.theatreservice.utils.CodeGeneratorUtil;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -33,7 +35,9 @@ public class SeatType {
     @PrePersist
     public void onPrePersist() {
         if (this.code == null) {
-            this.code = "seTy-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+            // UPDATED: Using the utility for safer, cleaner generation
+            // "Cit-" is 4 chars, leaving 12 chars for randomness (Total 16)
+            this.code = CodeGeneratorUtil.generate("SeTy", 11);
         }
         Instant now = Instant.now();
         if (this.createdAt == null) this.createdAt = now;

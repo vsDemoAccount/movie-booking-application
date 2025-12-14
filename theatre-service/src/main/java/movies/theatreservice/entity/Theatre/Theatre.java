@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import movies.theatreservice.entity.Screen.Screen;
 import movies.theatreservice.entity.city.City;
+import movies.theatreservice.utils.CodeGeneratorUtil;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -52,7 +53,9 @@ public class Theatre {
     @PrePersist
     public void onPrePersist() {
         if (this.code == null) {
-            this.code = "The-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+            // UPDATED: Using the utility for safer, cleaner generation
+            // "Cit-" is 4 chars, leaving 12 chars for randomness (Total 16)
+            this.code = CodeGeneratorUtil.generate("Thea", 11);
         }
         Instant now = Instant.now();
         if (this.createdAt == null) this.createdAt = now;

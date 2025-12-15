@@ -10,6 +10,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +29,11 @@ public class MovieEventConsumer {
                 .title(event.getTitle())
                 .durationMinutes(event.getDurationMinutes())
                 .posterUrl(event.getPosterUrl())
-                .genre(event.getGenre())
+                .certification(event.getCertification())
+                // Convert String back to LocalDate
+                .releaseDate(event.getReleaseDate() != null ? LocalDate.parse(event.getReleaseDate()) : null)
+                .languages(event.getLanguages())
+                .genres(event.getGenres())
                 .syncedAt(Instant.now())
                 .build();
 

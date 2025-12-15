@@ -14,10 +14,12 @@ public interface ShowRepository extends JpaRepository<Show, Long> {
 
     // Custom Query: Check if a show overlaps with existing shows in the same screen
     // Logic: (NewStart < OldEnd) AND (NewEnd > OldStart)
-    @Query("SELECT s FROM Show s WHERE s.screen.id = :screenId " +
-            "AND s.startTime < :endTime " +
-            "AND (s.startTime + (s.movie.durationMinutes * 60) SECOND) > :startTime")
-    List<Show> findOverlappingShows(@Param("screenId") Long screenId,
-                                    @Param("startTime") Instant startTime,
-                                    @Param("endTime") Instant endTime);
+    @Query("SELECT CASE WHEN COUNT(s) > 0 THEN TRUE ELSE FALSE END " +
+            "FROM Show s " +
+            "WHERE s.screen.id = :screenId " +
+            "AND s.startTime < :newEndTime " +
+            "AND s.endTime > :newStartTime")
+    boolean existsOverlappingShow(@Param("screenId") Long screenId,
+                                  @Param("newStartTime") Instant newStartTime,
+                                  @Param("newEndTime") Instant newEndTime);
 }

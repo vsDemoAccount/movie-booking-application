@@ -1,9 +1,11 @@
 package movies.theatreservice.controller.SeatController;
 
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import movies.theatreservice.dtos.SeatDTO.SeatDTO;
+import movies.theatreservice.dtos.SeatLayoutDTO.SeatLayoutDTO; // New DTO
 import movies.theatreservice.serviceImpl.SeatService.SeatService;
 import movies.theatreservice.utils.ApiResponse;
 import org.springframework.http.HttpStatus;
@@ -19,10 +21,17 @@ public class SeatController {
 
     private final SeatService seatService;
 
+    // Create Single Seat
     @PostMapping
     public ResponseEntity<ApiResponse<SeatDTO>> createSeat(@Valid @RequestBody SeatDTO seatDTO) {
         SeatDTO createdSeat = seatService.createSeat(seatDTO);
         return new ResponseEntity<>(ApiResponse.ok("Seat created successfully", createdSeat), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/layout")
+    public ResponseEntity<ApiResponse<List<SeatDTO>>> createSeatLayout(@RequestBody SeatLayoutDTO layoutDTO) {
+        List<SeatDTO> seats = seatService.createSeatLayout(layoutDTO);
+        return new ResponseEntity<>(ApiResponse.ok("Seat layout generated successfully", seats), HttpStatus.CREATED);
     }
 
     @GetMapping("/{code}")
@@ -31,8 +40,6 @@ public class SeatController {
         return ResponseEntity.ok(ApiResponse.ok("Seat fetched successfully", seat));
     }
 
-    // MANDATORY PARAMETER: screenCode
-    // Example: /api/seats?screenCode=Scr-Xy9z...
     @GetMapping
     public ResponseEntity<ApiResponse<List<SeatDTO>>> getAllSeatsForScreen(
             @RequestParam(required = true) String screenCode) {

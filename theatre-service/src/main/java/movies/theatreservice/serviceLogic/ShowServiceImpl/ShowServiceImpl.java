@@ -45,9 +45,9 @@ public class ShowServiceImpl {
         Instant endTime = showDTO.getStartTime().plusSeconds(movie.getDurationMinutes() * 60L);
 
         // 4. Validate Overlaps
-        List<Show> conflicts = showRepository.findOverlappingShows(screen.getId(), showDTO.getStartTime(), endTime);
-        if (!conflicts.isEmpty()) {
-            throw new DuplicateRecordException("Screen is busy during this time. Conflict with Show: " + conflicts.get(0).getCode());
+        boolean hasOverlap = showRepository.existsOverlappingShow(screen.getId(), showDTO.getStartTime(), endTime);
+        if (hasOverlap) {
+            throw new DuplicateRecordException("Screen is busy during this time.");
         }
 
         // 5. Build Show Entity
@@ -55,6 +55,7 @@ public class ShowServiceImpl {
                 .screen(screen)
                 .movie(movie)
                 .startTime(showDTO.getStartTime())
+                .endTime(endTime)
                 .build();
 
         // 6. Add Prices

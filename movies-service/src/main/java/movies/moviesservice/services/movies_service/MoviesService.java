@@ -149,8 +149,11 @@ public class MoviesService {
                 .title(savedMovie.getTitle())
                 .durationMinutes(savedMovie.getDurationMinutes())
                 .posterUrl(savedMovie.getPosterUrl())
-                // Simple logic to get first genre name, or default to "General"
-                .genre(savedMovie.getGenres().isEmpty() ? "General" : savedMovie.getGenres().iterator().next().getName())
+                .certification(savedMovie.getCertification())
+                .releaseDate(savedMovie.getReleaseDate() != null ? savedMovie.getReleaseDate().toString() : null)
+                .primaryGenre(savedMovie.getGenres().isEmpty() ? "General" : savedMovie.getGenres().iterator().next().getName())
+                .genres(savedMovie.getGenres().stream().map(Genre::getName).collect(Collectors.toSet()))
+                .languages(savedMovie.getLanguages().stream().map(Language::getName).collect(Collectors.toSet()))
                 .build();
 
         try {

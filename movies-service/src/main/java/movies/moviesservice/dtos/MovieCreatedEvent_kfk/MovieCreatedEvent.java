@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,4 +17,11 @@ public class MovieCreatedEvent {
     private int durationMinutes;   // 180
     private String posterUrl;
     private String genre;          // "Action"
+
+    private String certification;   // e.g., "UA", "A"
+    private String releaseDate;     // Send as String (e.g., "2025-12-25") to avoid timezone issues
+
+    private String primaryGenre;    // e.g. "Action" (For simple cards)
+    private Set<String> genres;     // e.g. ["Action", "Sci-Fi"] (For detailed filters)
+    private Set<String> languages;
 }

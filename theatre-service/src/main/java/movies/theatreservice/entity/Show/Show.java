@@ -31,13 +31,12 @@ public class Show {
     @JoinColumn(name = "screen_id", nullable = false)
     private Screen screen;
 
-    // --- CRITICAL CHANGE HERE ---
-    // DELETE: private String movieCode;
-    // ADD THIS INSTEAD:
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "movie_code", referencedColumnName = "code", nullable = false)
     private CatalogMovie movie;
-    // ----------------------------
+
+    @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    private Instant endTime;
 
     @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant startTime;

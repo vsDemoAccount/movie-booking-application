@@ -1,4 +1,4 @@
-package movies.moviesservice.sheduler.EventRetryScheduler;
+package movies.moviesservice.scheduler.EventRetryScheduler;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,7 +60,7 @@ public class EventRetryScheduler {
                 event.setErrorMessage(e.getMessage());
 
                 // If it has failed 5 times, stop trying.
-                if (event.getRetryCount() >= 5) {
+                if (event.getRetryCount() >= 2) {
                     event.setStatus("FAILED_PERMANENTLY");
                     log.error("❌ Marking event ID: {} as FAILED_PERMANENTLY after 5 attempts.", event.getId());
                 }

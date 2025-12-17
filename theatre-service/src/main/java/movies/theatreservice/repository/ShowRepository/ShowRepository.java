@@ -8,9 +8,12 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ShowRepository extends JpaRepository<Show, Long> {
+
+    Optional<Show> findByCode(String code);
 
     // Custom Query: Check if a show overlaps with existing shows in the same screen
     // Logic: (NewStart < OldEnd) AND (NewEnd > OldStart)

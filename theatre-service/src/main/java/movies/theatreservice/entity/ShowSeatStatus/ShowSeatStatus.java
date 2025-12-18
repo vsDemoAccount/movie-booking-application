@@ -34,8 +34,6 @@ public class ShowSeatStatus {
     @Column(nullable = false)
     private BookingStatus status;
 
-    // Stores the ID from the Booking Service (e.g., "Bk-1234")
-    // This lets us know WHO locked the seat.
     @Column(nullable = false)
     private String bookingRefId;
 

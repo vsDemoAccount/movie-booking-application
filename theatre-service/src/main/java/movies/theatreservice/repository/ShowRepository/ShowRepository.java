@@ -15,14 +15,31 @@ public interface ShowRepository extends JpaRepository<Show, Long> {
 
     Optional<Show> findByCode(String code);
 
-    // Custom Query: Check if a show overlaps with existing shows in the same screen
-    // Logic: (NewStart < OldEnd) AND (NewEnd > OldStart)
+    // Used for Ripple Effect (Movie Updates)
+    List<Show> findByMovie_CodeAndStartTimeAfter(String movieCode, Instant now);
+
+    // --- UPDATED OVERLAP QUERY ---
+    // Added: AND s.status != 'CANCELLED'
     @Query("SELECT CASE WHEN COUNT(s) > 0 THEN TRUE ELSE FALSE END " +
             "FROM Show s " +
             "WHERE s.screen.id = :screenId " +
+            "AND s.status != 'CANCELLED' " +
             "AND s.startTime < :newEndTime " +
             "AND s.endTime > :newStartTime")
     boolean existsOverlappingShow(@Param("screenId") Long screenId,
                                   @Param("newStartTime") Instant newStartTime,
                                   @Param("newEndTime") Instant newEndTime);
+
+    // --- UPDATED EXCLUDE-SELF QUERY ---
+    @Query("SELECT CASE WHEN COUNT(s) > 0 THEN TRUE ELSE FALSE END " +
+            "FROM Show s " +
+            "WHERE s.screen.id = :screenId " +
+            "AND s.id != :currentShowId " +
+            "AND s.status != 'CANCELLED' " +
+            "AND s.startTime < :newEndTime " +
+            "AND s.endTime > :newStartTime")
+    boolean existsOverlappingShowExcludingSelf(@Param("screenId") Long screenId,
+                                               @Param("newStartTime") Instant newStartTime,
+                                               @Param("newEndTime") Instant newEndTime,
+                                               @Param("currentShowId") Long currentShowId);
 }

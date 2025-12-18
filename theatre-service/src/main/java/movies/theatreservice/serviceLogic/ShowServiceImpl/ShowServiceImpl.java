@@ -12,6 +12,7 @@ import movies.theatreservice.entity.Show.Show;
 import movies.theatreservice.entity.ShowSeatPrice.ShowSeatPrice;
 import movies.theatreservice.entity.ShowSeatStatus.ShowSeatStatus;
 import movies.theatreservice.enums.BookingStatus;
+import movies.theatreservice.enums.ShowStatus;
 import movies.theatreservice.exceptions.DuplicateRecordException;
 import movies.theatreservice.exceptions.ResourceNotFoundException;
 import movies.theatreservice.mappers.ShowMapper.ShowMapper;
@@ -21,6 +22,7 @@ import movies.theatreservice.repository.SeatRepository.SeatRepository;
 import movies.theatreservice.repository.SeatTypeRepository.SeatTypeRepository;
 import movies.theatreservice.repository.ShowRepository.ShowRepository;
 import movies.theatreservice.repository.ShowSeatStatusRepository.ShowSeatStatusRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,7 +81,11 @@ public class ShowServiceImpl {
                 .build()
         ).collect(Collectors.toList());
 
-        showSeatStatusRepository.saveAll(locks);
+        try {
+            showSeatStatusRepository.saveAll(locks);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateRecordException("Race Condition: Someone just booked these seats ahead of you. Please select different seats.");
+        }
     }
 
     @Transactional
@@ -121,5 +127,23 @@ public class ShowServiceImpl {
 
         Show savedShow = showRepository.save(show);
         return showMapper.toDTO(savedShow);
+    }
+
+    @Transactional
+    public void cancelShow(String showCode) {
+        Show show = showRepository.findByCode(showCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Show", "code", showCode));
+
+        if (show.getStatus() == ShowStatus.CANCELLED) {
+            throw new RuntimeException("Show is already cancelled.");
+        }
+
+        if (show.getStatus() == ShowStatus.COMPLETED) {
+            throw new RuntimeException("Cannot cancel a show that has already completed.");
+        }
+
+        // 1. Mark as Cancelled
+        show.setStatus(ShowStatus.CANCELLED);
+        showRepository.save(show);
     }
 }

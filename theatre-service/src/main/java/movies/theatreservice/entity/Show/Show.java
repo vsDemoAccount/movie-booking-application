@@ -6,6 +6,7 @@ import lombok.*;
 import movies.theatreservice.entity.CatalogMovie_kfk.CatalogMovie;
 import movies.theatreservice.entity.Screen.Screen;
 import movies.theatreservice.entity.ShowSeatPrice.ShowSeatPrice;
+import movies.theatreservice.enums.ShowStatus;
 import movies.theatreservice.utils.CodeGeneratorUtil;
 
 import java.time.Instant;
@@ -40,6 +41,11 @@ public class Show {
 
     @Column(nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private Instant startTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ShowStatus status = ShowStatus.SCHEDULED;
 
     // Helper method (depends on 'movie' being present)
     public Instant getEndTime() {

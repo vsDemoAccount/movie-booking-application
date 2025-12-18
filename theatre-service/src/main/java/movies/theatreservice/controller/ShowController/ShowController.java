@@ -36,4 +36,10 @@ public class ShowController {
         showService.lockSeats(request);
         return ResponseEntity.ok(ApiResponse.ok("Seats locked successfully", null));
     }
+
+    @DeleteMapping("/{showCode}")
+    public ResponseEntity<ApiResponse<Void>> cancelShow(@PathVariable String showCode) {
+        showService.cancelShow(showCode);
+        return ResponseEntity.ok(ApiResponse.ok("Show cancelled successfully", null));
+    }
 }

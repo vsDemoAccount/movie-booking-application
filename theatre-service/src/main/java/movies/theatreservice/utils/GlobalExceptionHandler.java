@@ -1,6 +1,7 @@
 package movies.theatreservice.utils;
 
 
+import movies.theatreservice.exceptions.DuplicateRecordException;
 import movies.theatreservice.exceptions.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,5 +28,11 @@ public class GlobalExceptionHandler {
                 ApiResponse.error(ex.getMessage(), null),
                 HttpStatus.INTERNAL_SERVER_ERROR
         );
+    }
+
+    @ExceptionHandler(DuplicateRecordException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateRecord(DuplicateRecordException ex) {
+        // 409 Conflict is the correct status for double-booking
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage(), 409), HttpStatus.CONFLICT);
     }
 }

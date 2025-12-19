@@ -5,11 +5,8 @@ package movies.moviesservice.services.movies_service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import movies.moviesservice.controller.MovieEventProducer.MovieEventProducer;
 import movies.moviesservice.dtos.MovieCreatedEvent_kfk.MovieCreatedEvent;
 import movies.moviesservice.dtos.MovieDTO;
-import movies.moviesservice.dtos.MovieCastDTO.MovieCastDto;
 import movies.moviesservice.Mappers.MovieMapper.MovieMapper;
 import movies.moviesservice.entity.FailedEvent.FailedEvent;
 import movies.moviesservice.entity.Movie;
@@ -17,7 +14,6 @@ import movies.moviesservice.entity.language.Language;
 import movies.moviesservice.entity.genre.Genre;
 import movies.moviesservice.entity.Franchise.Franchise;
 import movies.moviesservice.entity.Tag.Tag;
-import movies.moviesservice.entity.movieCast.MovieCast;
 import movies.moviesservice.entity.person.Person;
 import movies.moviesservice.repository.FailedEventRepository.FailedEventRepository;
 import movies.moviesservice.repository.movies_repo.MoviesRepository;
@@ -26,6 +22,7 @@ import movies.moviesservice.repository.GenreRepository.GenreRepository;
 import movies.moviesservice.repository.franchiseRepository.franchiseRepository;
 import movies.moviesservice.repository.TagRepository.TagRepository;
 import movies.moviesservice.repository.PersonRepository.PersonRepository;
+import movies.moviesservice.services.MovieEventProducer.MovieEventProducer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,7 +30,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -251,6 +247,26 @@ public class MoviesService {
         }
 
         Movie updatedMovie = moviesRepository.save(movie);
+
+        MovieCreatedEvent event = MovieCreatedEvent.builder()
+                .code(updatedMovie.getCode())
+                .title(updatedMovie.getTitle())
+                .durationMinutes(updatedMovie.getDurationMinutes())
+                .posterUrl(updatedMovie.getPosterUrl())
+                .certification(updatedMovie.getCertification())
+                .releaseDate(updatedMovie.getReleaseDate() != null ? updatedMovie.getReleaseDate().toString() : null)
+                .primaryGenre(updatedMovie.getGenres().isEmpty() ? "General" : updatedMovie.getGenres().iterator().next().getName())
+                .genres(updatedMovie.getGenres().stream().map(Genre::getName).collect(Collectors.toSet()))
+                .languages(updatedMovie.getLanguages().stream().map(Language::getName).collect(Collectors.toSet()))
+                .build();
+
+        try {
+            movieEventProducer.sendMovieUpdated(event);
+        } catch (Exception e) {
+            System.err.println("Kafka Update Failed. Saving to Fallback DB.");
+            handleKafkaFailure(event, "movie-updated-topic", e.getMessage());
+        }
+
         return movieMapper.toDTO(updatedMovie);
     }
 
@@ -260,6 +276,14 @@ public class MoviesService {
             throw new EntityNotFoundException("Movie not found with code: " + code);
         }
         moviesRepository.deleteByCode(code);
+
+        try {
+            movieEventProducer.sendMovieDeleted(code);
+        } catch (Exception e) {
+            System.err.println("Kafka Delete Failed. Saving to Fallback DB.");
+            // For simple strings, we wrap them in a simple object or just save the string
+            handleKafkaFailure(code, "movie-deleted-topic", e.getMessage());
+        }
     }
 
     public Page<MovieDTO> getAllMovies(Pageable pageable) {

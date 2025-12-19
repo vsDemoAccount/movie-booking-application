@@ -2,6 +2,7 @@ package movies.theatreservice.repository.ShowRepository;
 
 import movies.theatreservice.entity.Show.Show;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,11 +16,19 @@ public interface ShowRepository extends JpaRepository<Show, Long> {
 
     Optional<Show> findByCode(String code);
 
+    // --- ADD THIS LINE TO FIX THE ERROR ---
+    // Checks if ANY show exists for this movie code
+    boolean existsByMovie_Code(String movieCode);
+    // -------------------------------------
+
+    @Modifying
+    @Query("UPDATE Show s SET s.status = 'COMPLETED' WHERE s.endTime < :now AND s.status = 'SCHEDULED'")
+    int updateStatusForPastShows(@Param("now") Instant now);
+
     // Used for Ripple Effect (Movie Updates)
     List<Show> findByMovie_CodeAndStartTimeAfter(String movieCode, Instant now);
 
     // --- UPDATED OVERLAP QUERY ---
-    // Added: AND s.status != 'CANCELLED'
     @Query("SELECT CASE WHEN COUNT(s) > 0 THEN TRUE ELSE FALSE END " +
             "FROM Show s " +
             "WHERE s.screen.id = :screenId " +

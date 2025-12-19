@@ -51,27 +51,45 @@ public class ShowServiceImpl {
 
     @Transactional
     public void lockSeats(LockSeatsRequestDTO request) {
-        // A. Validate Show by CODE
+        // 1. Validate Show
         Show show = showRepository.findByCode(request.getShowCode())
                 .orElseThrow(() -> new ResourceNotFoundException("Show", "code", request.getShowCode()));
 
-        // B. Resolve Seat Codes to Entity Objects
         List<Seat> seats = new ArrayList<>();
+
+        // 2. Validate Seats & SCREEN INTEGRITY
         for (String code : request.getSeatCodes()) {
             Seat seat = seatRepository.findByCode(code)
                     .orElseThrow(() -> new ResourceNotFoundException("Seat", "code", code));
+
+            // --- CRITICAL SECURITY CHECK ---
+            // Ensure the seat belongs to the SAME screen as the show
+            if (!seat.getScreen().getId().equals(show.getScreen().getId())) {
+                throw new IllegalArgumentException("Security Error: Seat " + code + " does not belong to the screen showing this movie.");
+            }
+            // -------------------------------
+
             seats.add(seat);
+        }
+
+        // 3. IDEMPOTENCY CHECK (Network Retry Safety)
+        // If the Booking Service retries the SAME bookingRefId, we should say "OK"
+        // instead of throwing "Duplicate Error". This handles network timeouts gracefully.
+        boolean alreadyLockedByThisBooking = showSeatStatusRepository.existsByBookingRefId(request.getBookingRefId());
+        if (alreadyLockedByThisBooking) {
+            // Log it and return quietly (Idempotent success)
+            return;
         }
 
         List<Long> seatIds = seats.stream().map(Seat::getId).collect(Collectors.toList());
 
-        // C. Check Concurrency (Using Show Code)
+        // 4. "Soft" Concurrency Check (Are they taken by SOMEONE ELSE?)
         long occupiedCount = showSeatStatusRepository.countOccupiedSeats(show.getCode(), seatIds);
         if (occupiedCount > 0) {
-            throw new DuplicateRecordException("One or more selected seats are already booked or locked.");
+            throw new DuplicateRecordException("One or more selected seats are already booked.");
         }
 
-        // D. Create Locks
+        // 5. Create Locks
         List<ShowSeatStatus> locks = seats.stream().map(seat -> ShowSeatStatus.builder()
                 .show(show)
                 .seat(seat)
@@ -84,7 +102,7 @@ public class ShowServiceImpl {
         try {
             showSeatStatusRepository.saveAll(locks);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicateRecordException("Race Condition: Someone just booked these seats ahead of you. Please select different seats.");
+            throw new DuplicateRecordException("Race Condition: Seats booked by another user.");
         }
     }
 

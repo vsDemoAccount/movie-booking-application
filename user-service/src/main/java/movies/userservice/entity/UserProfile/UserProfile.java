@@ -22,12 +22,16 @@ public class UserProfile {
     @JoinColumn(name = "user_id")
     private User user;
 
+    // Stores the S3 URL
     private String avatarUrl;
 
-    // Critical for Booking App: "Show movies in Mumbai by default"
+    @Column(length = 16)
     private String preferredCityCode;
 
+    @Column(length = 10)
     private String locale;
+
+    @Column(length = 50)
     private String timezone;
 
     @Column(name = "updated_at")

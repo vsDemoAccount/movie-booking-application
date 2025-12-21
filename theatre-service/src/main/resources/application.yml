@@ -5,6 +5,7 @@ spring:
   application:
     name: theatre-service
 
+
   datasource:
     url: jdbc:postgresql://localhost:5432/microtheatre
     username: postgres
@@ -39,3 +40,10 @@ spring:
         # Right-click your 'MovieCreatedEvent.java' file in IntelliJ -> "Copy Reference"
         # and paste it here if it is different.
         spring.json.value.default.type: movies.theatreservice.dtos.MovieCreatedEvent
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

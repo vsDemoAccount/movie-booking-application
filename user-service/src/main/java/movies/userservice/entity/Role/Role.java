@@ -2,6 +2,10 @@ package movies.userservice.entity.Role;
 
 import jakarta.persistence.*;
 import lombok.*;
+import movies.userservice.entity.RolePermission.RolePermission;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "roles")
@@ -16,12 +20,18 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // internal
 
-    @Column(nullable = false, length = 32, unique = true)
-    private String code;
-    // USER, THEATRE_ADMIN, THEATRE_STAFF, PLATFORM_ADMIN
+    @Column(nullable = false, unique = true, length = 32)
+    private String code; // USER, THEATRE_ADMIN
 
     private String description;
 
     @Column(nullable = false)
     private boolean systemRole;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<RolePermission> permissions = new HashSet<>();
+
 }

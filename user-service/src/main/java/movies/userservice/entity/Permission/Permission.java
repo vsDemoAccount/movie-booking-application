@@ -14,11 +14,10 @@ public class Permission {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // internal
+    private Long id;
 
-    @Column(nullable = false, length = 64, unique = true)
+    @Column(nullable = false, unique = true, length = 64)
     private String code;
-
 
     private String description;
 }

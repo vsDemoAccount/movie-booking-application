@@ -5,10 +5,11 @@ import lombok.*;
 import movies.userservice.entity.Permission.Permission;
 import movies.userservice.entity.Role.Role;
 
+
 @Entity
 @Table(
         name = "role_permissions",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"role_code", "permission_code"})
+        uniqueConstraints = @UniqueConstraint(columnNames = {"role_id", "permission_id"})
 )
 @Getter
 @Setter
@@ -21,11 +22,12 @@ public class RolePermission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "permission_id")
     private Permission permission;
 }
+

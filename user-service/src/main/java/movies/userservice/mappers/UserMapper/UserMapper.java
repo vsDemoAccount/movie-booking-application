@@ -14,7 +14,6 @@ public interface UserMapper {
     // DTO -> Entity (Create)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "code", ignore = true)
-    @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "keycloakId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -24,7 +23,6 @@ public interface UserMapper {
     // DTO -> Entity (Update)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "code", ignore = true)
-    @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "email", ignore = true) // Usually email changes require special flow
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDTO(UserDTO dto, @MappingTarget User user);

@@ -16,8 +16,10 @@ import movies.userservice.repository.RolePermissionRepository.RolePermissionRepo
 import movies.userservice.repository.RoleRepository.RoleRepository;
 import movies.userservice.repository.UserRepository.UserRepository;
 import movies.userservice.repository.UserRoleRepository.UserRoleRepository;
+import movies.userservice.security.SecurityUtils;
 import movies.userservice.service.RoleService.RoleService;
 import movies.userservice.serviceimpl.PermissionCheckService.PermissionCheckService;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +78,7 @@ public class RoleServiceImpl implements RoleService {
     public void assignRoleToUser(String userCode, AssignRoleRequest req) {
         permissionCheckService.requirePermission("ROLE_MANAGE");
         User user = getUser(userCode);
+        preventSelfEscalation(user);
         Role role = getRole(req.getRoleCode());
 
         if (role.isSystemRole() && req.getScopeRefCode() != null) {
@@ -98,6 +101,8 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public void revokeRoleFromUser(String userCode, AssignRoleRequest req) {
         permissionCheckService.requirePermission("ROLE_MANAGE");
+        User user = getUser(userCode);
+        preventSelfEscalation(user);
         userRoleRepo.deleteByUserAndRoleAndScopeRefCode(
                 getUser(userCode), getRole(req.getRoleCode()), req.getScopeRefCode());
     }
@@ -106,7 +111,6 @@ public class RoleServiceImpl implements RoleService {
     @Transactional(readOnly = true)
     public Set<UserRoleDTO> getUserRoles(String userCode) {
         User user = getUser(userCode);
-
         return userRoleRepo.findByUser(user).stream()
                 .map(this::toUserRoleDTO)
                 .collect(Collectors.toSet());
@@ -161,6 +165,19 @@ public class RoleServiceImpl implements RoleService {
         );
         return dto;
     }
+
+    private void preventSelfEscalation(User targetUser) {
+        String keycloakId = SecurityUtils.getKeycloakUserId();
+
+        if (keycloakId == null) {
+            throw new AccessDeniedException("Unauthenticated request");
+        }
+
+        if (keycloakId.equals(targetUser.getKeycloakId())) {
+            throw new AccessDeniedException("You cannot modify your own roles");
+        }
+    }
+
 
     private User getUser(String code) {
         return userRepo.findByCode(code)

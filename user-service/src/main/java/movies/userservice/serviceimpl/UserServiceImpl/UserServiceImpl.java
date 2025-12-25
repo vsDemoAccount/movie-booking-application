@@ -22,7 +22,6 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    // private final PasswordEncoder passwordEncoder; // Inject this later
 
     @Override
     @Transactional
@@ -38,9 +37,7 @@ public class UserServiceImpl implements UserService {
 
         User user = userMapper.toEntity(userDTO);
 
-        // TEMPORARY: Simple hashing or no hashing until you add Spring Security
-        // user.setPasswordHash(passwordEncoder.encode(userDTO.getPassword()));
-        user.setPasswordHash(userDTO.getPassword()); // WARN: Plaintext for DEV ONLY
+
 
         user.setStatus(UserStatus.ACTIVE);
 

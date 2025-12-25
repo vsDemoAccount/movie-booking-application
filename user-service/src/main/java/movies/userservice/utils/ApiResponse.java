@@ -39,4 +39,12 @@ public class ApiResponse<T> {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
+
+    public static <T> ApiResponse<T> fail(String errorMessage) {
+        ApiResponse<T> res = new ApiResponse<>();
+        res.success = false;
+        res.error = errorMessage;
+        res.timestamp = LocalDateTime.now();
+        return res;
+    }
 }

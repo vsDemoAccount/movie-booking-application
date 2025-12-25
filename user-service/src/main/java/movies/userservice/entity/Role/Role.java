@@ -31,6 +31,7 @@ public class Role {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Builder.Default
     @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<RolePermission> permissions = new HashSet<>();
 

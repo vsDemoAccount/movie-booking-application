@@ -17,6 +17,7 @@ import movies.userservice.repository.RoleRepository.RoleRepository;
 import movies.userservice.repository.UserRepository.UserRepository;
 import movies.userservice.repository.UserRoleRepository.UserRoleRepository;
 import movies.userservice.service.RoleService.RoleService;
+import movies.userservice.serviceimpl.PermissionCheckService.PermissionCheckService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,9 +36,11 @@ public class RoleServiceImpl implements RoleService {
     private final RolePermissionRepository rolePermRepo;
     private final UserRepository userRepo;
     private final UserRoleRepository userRoleRepo;
+    private final PermissionCheckService permissionCheckService;
 
     @Override
     public RoleDTO createRole(RoleDTO dto) {
+        permissionCheckService.requirePermission("ROLE_MANAGE");
         Role role = Role.builder()
                 .code(dto.getCode())
                 .description(dto.getDescription())
@@ -52,6 +55,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public RoleDTO updateRole(String roleCode, RoleDTO dto) {
+        permissionCheckService.requirePermission("ROLE_MANAGE");
         Role role = getRole(roleCode);
 
         role.setDescription(dto.getDescription());
@@ -63,12 +67,14 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public void disableRole(String roleCode) {
+        permissionCheckService.requirePermission("ROLE_MANAGE");
         Role role = getRole(roleCode);
         role.setActive(false);
     }
 
     @Override
     public void assignRoleToUser(String userCode, AssignRoleRequest req) {
+        permissionCheckService.requirePermission("ROLE_MANAGE");
         User user = getUser(userCode);
         Role role = getRole(req.getRoleCode());
 
@@ -91,6 +97,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public void revokeRoleFromUser(String userCode, AssignRoleRequest req) {
+        permissionCheckService.requirePermission("ROLE_MANAGE");
         userRoleRepo.deleteByUserAndRoleAndScopeRefCode(
                 getUser(userCode), getRole(req.getRoleCode()), req.getScopeRefCode());
     }

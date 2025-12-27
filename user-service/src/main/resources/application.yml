@@ -6,6 +6,12 @@ spring:
   application:
     name: user-service
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/booking-realm
+
   datasource:
     url: jdbc:postgresql://localhost:5432/microusers
     username: postgres

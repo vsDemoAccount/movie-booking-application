@@ -25,12 +25,7 @@ public class User {
     @Column(nullable = false, length = 16, unique = true)
     private String code;
 
-    // THE CRITICAL LINK TO KEYCLOAK
-//    @Column(nullable = false, unique = true)
-//    private String keycloakId; // UUID from Keycloak
-
-    // NULLABLE for now. Will be populated when we integrate Keycloak.
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String keycloakId;
 
     @Column(nullable = false, unique = true)
@@ -40,20 +35,13 @@ public class User {
 
     private String displayName;
 
-    // Temporary: For manual login until Keycloak is ready
-    @Column(nullable = false)
-    private String passwordHash;
-
-//    @Enumerated(EnumType.STRING)
-//    @Column(nullable = false)
-//    private UserStatus status; // ACTIVE, SUSPENDED (Synced from Keycloak)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
-    private boolean emailVerified; // Synced from Keycloak
+    private boolean emailVerified;
 
     @Column(unique = true)
     private String phone;

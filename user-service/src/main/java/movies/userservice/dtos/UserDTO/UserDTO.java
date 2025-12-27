@@ -27,11 +27,6 @@ public class UserDTO {
     private String displayName;
     private String phone;
 
-    // INPUT ONLY: Client sends it, but we NEVER send it back
-    @NotBlank(message = "Password is required")
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String password;
-
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private UserStatus status;
 

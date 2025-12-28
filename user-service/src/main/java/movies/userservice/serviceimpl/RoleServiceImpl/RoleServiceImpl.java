@@ -116,18 +116,6 @@ public class RoleServiceImpl implements RoleService {
                 .collect(Collectors.toSet());
     }
 
-    @Override
-    public List<RoleDTO> getAllRoles() {
-        return roleRepo.findAll().stream().map(this::toDTO).toList();
-    }
-
-    @Override
-    public List<String> getAllPermissions() {
-        return permRepo.findAll().stream()
-                .map(Permission::getCode)
-                .toList();
-    }
-
     // ---------------- helpers ----------------
 
     private void attachPermissions(Role role, Set<String> permCodes) {

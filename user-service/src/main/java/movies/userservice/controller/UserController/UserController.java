@@ -16,29 +16,21 @@ public class UserController {
 
     private final UserService userService;
 
-    // POST /api/v1/users (Manual Registration)
-    @PostMapping
-    public ResponseEntity<ApiResponse<UserDTO>> createUser(@Valid @RequestBody UserDTO userDTO) {
-        UserDTO createdUser = userService.createUser(userDTO);
-        return new ResponseEntity<>(
-                ApiResponse.ok("User registered successfully", createdUser),
-                HttpStatus.CREATED
+    // 🔑 Triggers lazy provisioning
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserDTO>> me() {
+        return ResponseEntity.ok(
+                ApiResponse.ok("Current user", userService.getCurrentUser())
         );
     }
 
-    // GET /api/v1/users/usr-xxxx
-    @GetMapping("/{code}")
-    public ResponseEntity<ApiResponse<UserDTO>> getUser(@PathVariable String code) {
-        UserDTO user = userService.getUserByCode(code);
-        return ResponseEntity.ok(ApiResponse.ok("User retrieved", user));
-    }
+    // 🔒 Update own profile only
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserDTO>> updateMe(
+            @RequestBody UserDTO dto) {
 
-    // PUT /api/v1/users/usr-xxxx (Update Profile)
-    @PutMapping("/{code}")
-    public ResponseEntity<ApiResponse<UserDTO>> updateUser(
-            @PathVariable String code,
-            @RequestBody UserDTO userDTO) {
-        UserDTO updatedUser = userService.updateUser(code, userDTO);
-        return ResponseEntity.ok(ApiResponse.ok("User updated successfully", updatedUser));
+        return ResponseEntity.ok(
+                ApiResponse.ok("User updated", userService.updateCurrentUser(dto))
+        );
     }
 }

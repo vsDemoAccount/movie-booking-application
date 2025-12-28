@@ -4,14 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import movies.userservice.dtos.UserDTO.UserDTO;
 import movies.userservice.entity.User.User;
-import movies.userservice.enums.UserStatus;
-
-// import org.springframework.security.crypto.password.PasswordEncoder; // Uncomment when security is added
-import movies.userservice.exception.DuplicateRecordException;
-import movies.userservice.exception.ResourceNotFoundException;
 import movies.userservice.mappers.UserMapper.UserMapper;
-import movies.userservice.repository.UserRepository.UserRepository;
 import movies.userservice.service.UserService.UserService;
+import movies.userservice.serviceimpl.UserProvisioningService.UserProvisioningService;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,55 +17,35 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
+    private final UserProvisioningService provisioningService;
     private final UserMapper userMapper;
 
-    @Override
     @Transactional
-    public UserDTO createUser(UserDTO userDTO) {
-        log.info("Creating new user with email: {}", userDTO.getEmail());
+    public UserDTO getCurrentUser() {
 
-        if (userRepository.existsByEmail(userDTO.getEmail())) {
-            throw new DuplicateRecordException("Email already in use");
-        }
-        if (userDTO.getPhone() != null && userRepository.existsByPhone(userDTO.getPhone())) {
-            throw new DuplicateRecordException("Phone number already in use");
-        }
+        Jwt jwt = (Jwt) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
 
-        User user = userMapper.toEntity(userDTO);
-
-
-
-        user.setStatus(UserStatus.ACTIVE);
-
-        User savedUser = userRepository.save(user);
-        log.info("User created successfully. Code: {}", savedUser.getCode());
-
-        return userMapper.toDTO(savedUser);
+        User user = provisioningService.getOrCreate(jwt);
+        return userMapper.toDTO(user);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public UserDTO getUserByCode(String code) {
-        return userRepository.findByCode(code)
-                .map(userMapper::toDTO)
-                .orElseThrow(() -> new  ResourceNotFoundException("User", "code", code));
-    }
 
     @Override
     @Transactional
-    public UserDTO updateUser(String code, UserDTO userDTO) {
-        User user = userRepository.findByCode(code)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "code", code));
+    public UserDTO updateCurrentUser(UserDTO dto) {
 
-        // Logic to prevent duplicate phone updates
-        if (userDTO.getPhone() != null && !userDTO.getPhone().equals(user.getPhone())) {
-            if(userRepository.existsByPhone(userDTO.getPhone())) {
-                throw new DuplicateRecordException("Phone number already in use");
-            }
-        }
+        Jwt jwt = (Jwt) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
 
-        userMapper.updateEntityFromDTO(userDTO, user);
-        return userMapper.toDTO(userRepository.save(user));
+        User user = provisioningService.getOrCreate(jwt);
+
+        // 🔒 Identity fields owned by Keycloak
+        dto.setEmail(null);
+
+        userMapper.updateEntityFromDTO(dto, user);
+        return userMapper.toDTO(user);
     }
 }

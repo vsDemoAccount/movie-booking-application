@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import movies.userservice.enums.UserStatus;
 import movies.userservice.utils.CodeGeneratorUtil;
-
 import java.time.Instant;
 
 @Entity

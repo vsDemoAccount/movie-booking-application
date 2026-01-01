@@ -3,9 +3,10 @@ package movies.userservice.serviceimpl.PermissionCheckService;
 
 import lombok.RequiredArgsConstructor;
 import movies.userservice.entity.User.User;
-import movies.userservice.repository.UserRepository.UserRepository;
 import movies.userservice.repository.UserRoleRepository.UserRoleRepository;
-import movies.userservice.security.SecurityUtils;
+import movies.userservice.serviceimpl.UserProvisioningService.UserProvisioningService;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -14,28 +15,22 @@ import org.springframework.security.access.AccessDeniedException;
 @RequiredArgsConstructor
 public class PermissionCheckService {
 
-    private final UserRepository userRepository;
+    private final UserProvisioningService provisioningService;
     private final UserRoleRepository userRoleRepository;
 
     public void requirePermission(String permissionCode) {
 
+        Jwt jwt = (Jwt) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
 
-        String keycloakId = SecurityUtils.getKeycloakUserId();
+        User actor = provisioningService.getOrCreate(jwt);
 
-        if (keycloakId == null) {
-            throw new AccessDeniedException("Unauthenticated");
-        }
-
-
-        User actor = userRepository.findByKeycloakId(keycloakId)
-                .orElseThrow(() -> new AccessDeniedException("User not registered"));
-
-
-        boolean hasPermission = userRoleRepository.findByUser(actor).stream()
+        boolean allowed = userRoleRepository.findByUser(actor).stream()
                 .flatMap(ur -> ur.getRole().getPermissions().stream())
                 .anyMatch(rp -> rp.getPermission().getCode().equals(permissionCode));
 
-        if (!hasPermission) {
+        if (!allowed) {
             throw new AccessDeniedException("Missing permission: " + permissionCode);
         }
     }

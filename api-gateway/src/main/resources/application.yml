@@ -1,0 +1,58 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: api-gateway
+
+  # KEYCLOAK SECURITY CONFIG
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Point this to your Keycloak Realm
+          issuer-uri: http://localhost:8080/realms/booking-realm
+
+  # GATEWAY ROUTES
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      routes:
+        # --- Route 1: User Service ---
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            # Matches all endpoints we created in User Service
+            - Path=/api/v1/users/**, /api/v1/roles/**, /api/v1/auth/**, /api/v1/profile/**
+          filters:
+            # Takes the JWT received by Gateway and passes it to User Service
+            - TokenRelay=
+
+        # --- Route 2: Movies/Theatre Service (Placeholder for future) ---
+        - id: theatre-service
+          uri: lb://theatre-service
+          predicates:
+            - Path=/api/v1/theatres/**, /api/v1/shows/**
+          filters:
+            - TokenRelay=
+
+# EUREKA DISCOVERY
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# LOGGING (Helpful for debugging auth issues)
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    org.springframework.security: INFO
+    org.springframework.web.reactive.function.client: TRACE

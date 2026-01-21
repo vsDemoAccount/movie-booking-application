@@ -2,6 +2,9 @@ package movies.theatreservice.serviceLogic.TheatreServiceImpl;
 
 import lombok.RequiredArgsConstructor;
 
+import movies.theatreservice.client.UserClient;
+import movies.theatreservice.dtos.CheckPermissionRequest;
+import movies.theatreservice.dtos.ScreenDTO.ScreenDTO;
 import movies.theatreservice.dtos.TheatreDTO.TheatreDTO;
 import movies.theatreservice.entity.Theatre.Theatre;
 import movies.theatreservice.entity.city.City;
@@ -9,10 +12,14 @@ import movies.theatreservice.exceptions.ResourceNotFoundException;
 import movies.theatreservice.mappers.TheatreMapper.TheatreMapper;
 import movies.theatreservice.repository.CityRepository.CityRepository;
 import movies.theatreservice.repository.TheatreRepository.TheatreRepository;
+import movies.theatreservice.security.SecurityUtils;
 import movies.theatreservice.serviceImpl.TheatreService.TheatreService;
+import movies.theatreservice.utils.ApiResponse;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +30,26 @@ public class TheatreServiceImpl implements TheatreService {
     private final TheatreRepository theatreRepository;
     private final CityRepository cityRepository;
     private final TheatreMapper theatreMapper;
+    private final UserClient userClient;
+
+
+    @Override
+    public void addScreen(String theatreId, ScreenDTO screenDTO) throws AccessDeniedException {
+        // 1. Get Current User ID (from SecurityContext/Token)
+        String currentUserId = SecurityUtils.getUserId();
+
+        // 2. Call User Service synchronously
+        CheckPermissionRequest req = CheckPermissionRequest.builder()
+                .userId(currentUserId)
+                .permissionCode("THEATRE_MANAGE") // The permission required
+                .scopeRefCode(theatreId)          // The specific theatre
+                .build();
+        ResponseEntity<ApiResponse<Boolean>> response = userClient.checkPermission(req);
+
+        if (response.getBody() == null || !Boolean.TRUE.equals(response.getBody().getData())) {
+            throw new AccessDeniedException("You do not have permission to manage this theatre.");
+        }
+    }
 
     @Override
     public TheatreDTO createTheatre(TheatreDTO theatreDTO) {

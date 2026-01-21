@@ -1,10 +1,14 @@
 package movies.theatreservice.serviceImpl.TheatreService;
 
+import movies.theatreservice.dtos.ScreenDTO.ScreenDTO;
 import movies.theatreservice.dtos.TheatreDTO.TheatreDTO;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 public interface TheatreService {
+    void addScreen(String theatreId, ScreenDTO screenDTO) throws AccessDeniedException;
+
     TheatreDTO createTheatre(TheatreDTO theatreDTO);
     TheatreDTO getTheatreByCode(String code);
     List<TheatreDTO> getAllTheatres(String cityCode);

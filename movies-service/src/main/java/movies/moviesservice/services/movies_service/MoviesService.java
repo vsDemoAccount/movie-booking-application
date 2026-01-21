@@ -5,6 +5,8 @@ package movies.moviesservice.services.movies_service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
+import movies.moviesservice.client.UserClient;
+import movies.moviesservice.dtos.CheckPermissionRequest;
 import movies.moviesservice.dtos.MovieCreatedEvent_kfk.MovieCreatedEvent;
 import movies.moviesservice.dtos.MovieDTO;
 import movies.moviesservice.Mappers.MovieMapper.MovieMapper;
@@ -22,13 +24,17 @@ import movies.moviesservice.repository.GenreRepository.GenreRepository;
 import movies.moviesservice.repository.franchiseRepository.franchiseRepository;
 import movies.moviesservice.repository.TagRepository.TagRepository;
 import movies.moviesservice.repository.PersonRepository.PersonRepository;
+import movies.moviesservice.security.SecurityUtils;
 import movies.moviesservice.services.MovieEventProducer.MovieEventProducer;
+import movies.moviesservice.utils.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.AccessDeniedException;
 import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,6 +53,7 @@ public class MoviesService {
 
     private final FailedEventRepository failedEventRepository;
     private final ObjectMapper objectMapper;
+    private final UserClient userClient;
 
 
     @Autowired
@@ -57,7 +64,11 @@ public class MoviesService {
             GenreRepository genreRepository,
             franchiseRepository franchiseRepository,
             TagRepository tagRepository,
-            PersonRepository personRepository, MovieEventProducer movieEventProducer, FailedEventRepository failedEventRepository, ObjectMapper objectMapper) {
+            PersonRepository personRepository,
+            MovieEventProducer movieEventProducer,
+            FailedEventRepository failedEventRepository,
+            ObjectMapper objectMapper,
+            UserClient userClient) {
         this.moviesRepository = moviesRepository;
         this.movieMapper = movieMapper;
         this.languageRepository = languageRepository;
@@ -68,6 +79,7 @@ public class MoviesService {
         this.movieEventProducer = movieEventProducer;
         this.failedEventRepository = failedEventRepository;
         this.objectMapper = objectMapper;
+        this.userClient = userClient;
     }
 
     private Language findLanguageByCode(String code) {
@@ -96,7 +108,7 @@ public class MoviesService {
     }
 
     @Transactional
-    public MovieDTO createMovie(MovieDTO dto) {
+    public MovieDTO createMovie(MovieDTO dto) throws AccessDeniedException {
         if (dto == null) {
             throw new IllegalArgumentException("Movie data is required");
         }
@@ -107,6 +119,20 @@ public class MoviesService {
 
         Movie movie = movieMapper.toEntity(dto);
         // Remove: movie.setCode(null); - let @PrePersist handle it
+
+        String currentUserId = SecurityUtils.getUserId();
+
+        // 2. Check Global Permission (Scope is NULL)
+        CheckPermissionRequest req = CheckPermissionRequest.builder()
+                .userId(currentUserId)
+                .permissionCode("MOVIE_MANAGE")
+                .scopeRefCode(null) // Global permission check
+                .build();
+        ResponseEntity<ApiResponse<Boolean>> response = userClient.checkPermission(req);
+
+        if (response.getBody() == null || !Boolean.TRUE.equals(response.getBody().getData())) {
+            throw new AccessDeniedException("Only Admins can create movies.");
+        }
 
         // Resolve language codes to entities
         if (dto.getLanguageCodes() != null && !dto.getLanguageCodes().isEmpty()) {

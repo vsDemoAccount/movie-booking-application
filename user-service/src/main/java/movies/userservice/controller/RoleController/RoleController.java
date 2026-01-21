@@ -1,8 +1,10 @@
 package movies.userservice.controller.RoleController;
 
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import movies.userservice.dtos.AssignRoleRequest.AssignRoleRequest;
+import movies.userservice.dtos.CheckPermissionRequest.CheckPermissionRequest;
 import movies.userservice.dtos.RoleDTO.RoleDTO;
 import movies.userservice.dtos.UserRoleDTO.UserRoleDTO;
 import movies.userservice.service.RoleService.RoleService;
@@ -22,11 +24,10 @@ public class RoleController {
     private final RoleService roleService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<RoleDTO>> create(@RequestBody RoleDTO dto) {
+    public ResponseEntity<ApiResponse<RoleDTO>> create(@Valid @RequestBody RoleDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Role created", roleService.createRole(dto)));
     }
-
     @PutMapping("/{roleCode}")
     public ResponseEntity<ApiResponse<RoleDTO>> update(
             @PathVariable String roleCode,
@@ -45,7 +46,7 @@ public class RoleController {
     @PostMapping("/users/{userCode}")
     public ResponseEntity<ApiResponse<Void>> assign(
             @PathVariable String userCode,
-            @RequestBody AssignRoleRequest req) {
+            @Valid @RequestBody AssignRoleRequest req) {
 
         roleService.assignRoleToUser(userCode, req);
         return ResponseEntity.ok(ApiResponse.ok("Role assigned", null));
@@ -66,5 +67,18 @@ public class RoleController {
 
         return ResponseEntity.ok(
                 ApiResponse.ok("User roles", roleService.getUserRoles(userCode)));
+    }
+
+    @PostMapping("/check-permissions")
+    public ResponseEntity<ApiResponse<Boolean>> checkPermission(
+            @Valid @RequestBody CheckPermissionRequest request) {
+
+        boolean hasPermission = roleService.hasPermission(
+                request.getUserId(),
+                request.getPermissionCode(),
+                request.getScopeRefCode()
+        );
+
+        return ResponseEntity.ok(ApiResponse.ok("Permission check result", hasPermission));
     }
 }

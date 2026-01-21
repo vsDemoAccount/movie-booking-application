@@ -153,12 +153,6 @@ public class RoleServiceImpl implements RoleService {
     // ---------------- Helpers ----------------
 
     private void validateRoleHierarchy(Role targetRole) {
-        // Simple Logic: Only allow assigning roles that are NOT Platform Admin
-        // Unless the actor IS a Platform Admin.
-
-        // Ideally you check the Actor's roles here.
-        // For MVP: If the target role is ROLE_PLATFORM_ADMIN, block it
-        // unless we verify the actor is also one.
 
         if ("ROLE_PLATFORM_ADMIN".equals(targetRole.getCode())) {
             // Fetch current user
@@ -226,5 +220,27 @@ public class RoleServiceImpl implements RoleService {
     private Role getRole(String code) {
         return roleRepo.findByCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Role", "code", code));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasPermission(String userCode, String permissionCode, String scopeRefCode) {
+        // 1. Find the User
+        User user = userRepo.findByCode(userCode)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "code", userCode));
+
+        // 2. Stream through roles to find a match
+        return userRoleRepo.findByUser(user).stream()
+                // A. Must be an Active Role
+                .filter(ur -> ur.getRole().isActive())
+
+                // B. Scope Match Logic:
+                // - If user has Global Role (scope is null) -> They have access everywhere.
+                // - If user has Scoped Role -> It must match the requested scope.
+                .filter(ur -> ur.getScopeRefCode() == null || ur.getScopeRefCode().equals(scopeRefCode))
+
+                // C. Check Permissions inside the role
+                .flatMap(ur -> ur.getRole().getPermissions().stream())
+                .anyMatch(rp -> rp.getPermission().getCode().equals(permissionCode));
     }
 }

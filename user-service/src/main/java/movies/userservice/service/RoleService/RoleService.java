@@ -20,4 +20,6 @@ public interface RoleService {
     void revokeRoleFromUser(String userCode, AssignRoleRequest request);
 
     Set<UserRoleDTO> getUserRoles(String userCode);
+
+    boolean hasPermission(String userCode, String permissionCode, String scopeRefCode);
 }

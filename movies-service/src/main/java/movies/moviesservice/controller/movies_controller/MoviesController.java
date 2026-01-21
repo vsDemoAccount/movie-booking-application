@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
+
 @RestController
 @RequestMapping("/api/movies/movies")
 public class MoviesController {
@@ -35,6 +37,8 @@ public class MoviesController {
         } catch (IllegalArgumentException | EntityNotFoundException e) {
             ApiResponse<MovieDTO> response = ApiResponse.error(e.getMessage(), null);
             return ResponseEntity.badRequest().body(response);
+        } catch (AccessDeniedException e) {
+            throw new RuntimeException(e);
         }
     }
 
